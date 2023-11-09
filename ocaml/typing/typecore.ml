@@ -6383,8 +6383,7 @@ and type_function
       let env =
         Env.add_closure_lock
           ?closure_context:expected_mode.closure_context
-          (Alloc.locality alloc_mode)
-          (Alloc.linearity alloc_mode)
+          (alloc_as_value alloc_mode).comonadic
           env
       in
       let env =
