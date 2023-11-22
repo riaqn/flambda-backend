@@ -616,47 +616,21 @@ module Solver_polarized (C : Lattices_mono) = struct
     type 'd polarized = 'd neg
   end
 
-  (* Helper modules for constructing the 4 forms of [apply]. *)
-  module type Polarized_wrappers = sig
-    module P : Polarity
-
-    val unwrap_obj : ('a * P.polarity) obj -> 'a C.obj
-
-    val unwrap_mode : ('a * P.polarity, 'd P.polarized) mode -> ('a, 'd) S.mode
-
-    val wrap_mode : ('a, 'd) S.mode -> ('a * P.polarity, 'd P.polarized) mode
+  module Pos_Pos = struct
+    let apply (Positive dst : _ obj) f (Positive m) = Positive (S.apply dst f m)
   end
 
-  module Pos_wrappers : Polarized_wrappers with module P = Pos = struct
-    module P = Pos
-
-    let unwrap_obj (Positive dst : (_ * positive) obj) = dst
-
-    let unwrap_mode (Positive m : (_ * positive, _) mode) = m
-
-    let wrap_mode m = Positive m
+  module Pos_Neg = struct
+    let apply (Negative dst : _ obj) f (Positive m) = Negative (S.apply dst f m)
   end
 
-  module Neg_wrappers : Polarized_wrappers with module P = Neg = struct
-    module P = Neg
-
-    let unwrap_obj (Negative dst : (_ * negative) obj) = dst
-
-    let unwrap_mode (Negative m : (_ * negative, _) mode) = m
-
-    let wrap_mode m = Negative m
+  module Neg_Pos = struct
+    let apply (Positive dst : _ obj) f (Negative m) = Positive (S.apply dst f m)
   end
 
-  module Make_apply (From : Polarized_wrappers) (To : Polarized_wrappers) =
-  struct
-    let apply dst f m =
-      To.wrap_mode (S.apply (To.unwrap_obj dst) f (From.unwrap_mode m))
+  module Neg_Neg = struct
+    let apply (Negative dst : _ obj) f (Negative m) = Negative (S.apply dst f m)
   end
-
-  module Pos_Pos = Make_apply (Pos_wrappers) (Pos_wrappers)
-  module Pos_Neg = Make_apply (Pos_wrappers) (Neg_wrappers)
-  module Neg_Pos = Make_apply (Neg_wrappers) (Pos_wrappers)
-  module Neg_Neg = Make_apply (Neg_wrappers) (Neg_wrappers)
 
   let newvar : type a l r. a obj -> (a, l * r) mode = function
     | Positive obj ->
