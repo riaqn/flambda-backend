@@ -159,32 +159,27 @@ module type S = sig
     (** [('a, 'd, 'b, 'e) morph] identifies a morphism in the new category.
     where ['a] and ['b] are source and destination carrier types, and ['d] and
     ['e] are source and destination adjoint status *)
-    type ('a, 'd, 'b, 'e) morph =
-      | Pos_Pos :
-          ('a, 'b, 'd) C.morph
-          -> ('a * positive, 'd pos, 'b * positive, 'd pos) morph
-          (** The monotone morphism from a positive lattice to a positive lattice  *)
-      | Pos_Neg :
-          ('a, 'b, 'd) C.morph
-          -> ('a * positive, 'd pos, 'b * negative, 'd neg) morph
-          (** The antitone morphism from a positive lattice to a negative lattice  *)
-      | Neg_Pos :
-          ('a, 'b, 'd) C.morph
-          -> ('a * negative, 'd neg, 'b * positive, 'd pos) morph
-          (** The antitone morphism from a negative lattice to a positive lattice  *)
-      | Neg_Neg :
-          ('a, 'b, 'd) C.morph
-          -> ('a * negative, 'd neg, 'b * negative, 'd neg) morph
-          (** The monotone morphism from a negative lattice to a negative lattice *)
+    type ('a, 'd, 'b, 'e) morph
 
-    (* [id] and [compose] not used; just for fun *)
-    val id : 'a obj -> ('a, 'l * 'r, 'a, 'l * 'r) morph
+    (** The monotone morphism from a positive lattice to a positive lattice  *)
+    val pos_pos :
+      ('a, 'b, 'd) C.morph ->
+      ('a * positive, 'd pos, 'b * positive, 'd pos) morph
 
-    val compose :
-      'c obj ->
-      ('b, 'bl * 'br, 'c, 'cl * 'cr) morph ->
-      ('a, 'al * 'ar, 'b, 'bl * 'br) morph ->
-      ('a, 'al * 'ar, 'c, 'cl * 'cr) morph
+    (** The antitone morphism from a positive lattice to a negative lattice  *)
+    val pos_neg :
+      ('a, 'b, 'd) C.morph ->
+      ('a * positive, 'd pos, 'b * negative, 'd neg) morph
+
+    (** The antitone morphism from a negative lattice to a positive lattice  *)
+    val neg_pos :
+      ('a, 'b, 'd) C.morph ->
+      ('a * negative, 'd neg, 'b * positive, 'd pos) morph
+
+    (** The monotone morphism from a negative lattice to a negative lattice *)
+    val neg_neg :
+      ('a, 'b, 'd) C.morph ->
+      ('a * negative, 'd neg, 'b * negative, 'd neg) morph
 
     (* A mode with carrier type ['a] and left/right status ['d] derived from the
        morphism it contains. See comments for [morph] for the format of ['d] *)
@@ -193,11 +188,29 @@ module type S = sig
     include Allow_disallow with type ('a, _, 'd) t := ('a, 'd) mode
 
     (** Returns the result of applying the morphism to the mode. *)
-    val apply :
-      'b obj ->
-      ('a, 'd0 * 'd1, 'b, 'e0 * 'e1) morph ->
-      ('a, 'd0 * 'd1) mode ->
-      ('b, 'e0 * 'e1) mode
+    val pos_pos_apply :
+      ('b * positive) obj ->
+      ('a * positive, 'l * 'r, 'b * positive, 'l * 'r) morph ->
+      ('a * positive, 'l * 'r) mode ->
+      ('b * positive, 'l * 'r) mode
+
+    val pos_neg_apply :
+      ('b * negative) obj ->
+      ('a * positive, 'l * 'r, 'b * negative, 'r * 'l) morph ->
+      ('a * positive, 'l * 'r) mode ->
+      ('b * negative, 'r * 'l) mode
+
+    val neg_pos_apply :
+      ('b * positive) obj ->
+      ('a * negative, 'r * 'l, 'b * positive, 'l * 'r) morph ->
+      ('a * negative, 'r * 'l) mode ->
+      ('b * positive, 'l * 'r) mode
+
+    val neg_neg_apply :
+      ('b * negative) obj ->
+      ('a * negative, 'r * 'l, 'b * negative, 'r * 'l) morph ->
+      ('a * negative, 'r * 'l) mode ->
+      ('b * negative, 'r * 'l) mode
 
     (** Returns the mode representing the given constant. *)
     val of_const : ('a * 'p) obj -> 'a -> ('a * 'p, 'l * 'r) mode
