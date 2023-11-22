@@ -184,22 +184,10 @@ module type S = sig
 
       module To : Polarity
 
-      val lift :
-        ('a, 'b, 'd) C.morph ->
-        ( 'a * From.polarity,
-          'd From.polarized,
-          'b * To.polarity,
-          'd To.polarized )
-        morph
-
       (** Returns the result of applying the morphism to the mode. *)
       val apply :
         ('b * To.polarity) obj ->
-        ( 'a * From.polarity,
-          ('l * 'r) From.polarized,
-          'b * To.polarity,
-          ('l * 'r) To.polarized )
-        morph ->
+        ('a, 'b, 'l * 'r) C.morph ->
         ('a * From.polarity, ('l * 'r) From.polarized) mode ->
         ('b * To.polarity, ('l * 'r) To.polarized) mode
     end

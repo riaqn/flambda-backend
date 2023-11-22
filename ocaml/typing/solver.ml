@@ -18,13 +18,13 @@ module Magic_allow_disallow (X : Allow_disallow) :
 end
 
 module Make_unsafe_conversions (From : Misc.T4) (To : Misc.T4) : sig
-  val lift : ('a, 'b, 'c, 'd) From.t -> ('a, 'b, 'c, 'd) To.t
+  val _lift : ('a, 'b, 'c, 'd) From.t -> ('a, 'b, 'c, 'd) To.t
 
-  val lower : ('a, 'b, 'c, 'd) To.t -> ('a, 'b, 'c, 'd) From.t
+  val _lower : ('a, 'b, 'c, 'd) To.t -> ('a, 'b, 'c, 'd) From.t
 end = struct
-  let lift : ('a, 'b, 'c, 'd) From.t -> ('a, 'b, 'c, 'd) To.t = Obj.magic
+  let _lift : ('a, 'b, 'c, 'd) From.t -> ('a, 'b, 'c, 'd) To.t = Obj.magic
 
-  let lower : ('a, 'b, 'c, 'd) To.t -> ('a, 'b, 'c, 'd) From.t = Obj.magic
+  let _lower : ('a, 'b, 'c, 'd) To.t -> ('a, 'b, 'c, 'd) From.t = Obj.magic
 end
 
 (** Error returned by failed [submode a b]. [left] will be the lowest mode [a]
@@ -670,7 +670,7 @@ module Solver_polarized (C : Lattices_mono) = struct
     include Make_unsafe_conversions (C_morph) (Morph)
 
     let apply dst f m =
-      To.wrap_mode (S.apply (To.unwrap_obj dst) (lower f) (From.unwrap_mode m))
+      To.wrap_mode (S.apply (To.unwrap_obj dst) f (From.unwrap_mode m))
   end
 
   module Pos_Pos = Make_apply (Pos_wrappers) (Pos_wrappers)
