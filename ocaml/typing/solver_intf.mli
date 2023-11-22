@@ -174,7 +174,7 @@ module type S = sig
     module Neg :
       Polarity with type polarity = negative and type 'd polarized = 'd neg
 
-    module type Polarized := sig
+    module type Apply := sig
       module From : Polarity
 
       module To : Polarity
@@ -187,17 +187,17 @@ module type S = sig
         ('b * To.polarity, ('l * 'r) To.polarized) mode
     end
 
-    (** The monotone morphism from a positive lattice to a positive lattice  *)
-    module Pos_Pos : Polarized with module From := Pos and module To := Pos
+    (** The monotone morphism from a positive lattice to a positive lattice *)
+    module Pos_Pos : Apply with module From := Pos and module To := Pos
 
-    (** The antitone morphism from a positive lattice to a negative lattice  *)
-    module Pos_Neg : Polarized with module From := Pos and module To := Neg
+    (** The antitone morphism from a positive lattice to a negative lattice *)
+    module Pos_Neg : Apply with module From := Pos and module To := Neg
 
-    (** The antitone morphism from a negative lattice to a positive lattice  *)
-    module Neg_Pos : Polarized with module From := Neg and module To := Pos
+    (** The antitone morphism from a negative lattice to a positive lattice *)
+    module Neg_Pos : Apply with module From := Neg and module To := Pos
 
     (** The monotone morphism from a negative lattice to a negative lattice *)
-    module Neg_Neg : Polarized with module From := Neg and module To := Neg
+    module Neg_Neg : Apply with module From := Neg and module To := Neg
 
     (** Returns the mode representing the given constant. *)
     val of_const : ('a * 'p) obj -> 'a -> ('a * 'p, 'l * 'r) mode
