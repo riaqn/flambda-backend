@@ -162,11 +162,6 @@ module type S = sig
       | Negative : 'a C.obj -> ('a * negative) obj
           (** the dual lattice of obj *)
 
-    (** [('a, 'd, 'b, 'e) morph] identifies a morphism in the new category.
-    where ['a] and ['b] are source and destination carrier types, and ['d] and
-    ['e] are source and destination adjoint status *)
-    type ('a, 'd, 'b, 'e) morph
-
     (* A mode with carrier type ['a] and left/right status ['d] derived from the
        morphism it contains. See comments for [morph] for the format of ['d] *)
     type ('a, 'd) mode

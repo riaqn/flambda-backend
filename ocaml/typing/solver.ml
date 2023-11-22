@@ -17,6 +17,8 @@ module Magic_allow_disallow (X : Allow_disallow) :
     Obj.magic
 end
 
+[@@@warning "-60"] (* CR reisenberg: remove this *)
+
 module Make_unsafe_conversions (From : Misc.T4) (To : Misc.T4) : sig
   val _lift : ('a, 'b, 'c, 'd) From.t -> ('a, 'b, 'c, 'd) To.t
 
@@ -595,8 +597,6 @@ module Solver_polarized (C : Lattices_mono) = struct
     | Positive : 'a C.obj -> ('a * positive) obj
     | Negative : 'a C.obj -> ('a * negative) obj
 
-  type ('a, 'd, 'b, 'e) morph
-
   type ('a, 'd) mode =
     | Positive : ('a, 'd) S.mode -> ('a * positive, 'd pos) mode
     | Negative : ('a, 'd) S.mode -> ('a * negative, 'd neg) mode
@@ -649,26 +649,6 @@ module Solver_polarized (C : Lattices_mono) = struct
 
   module Make_apply (From : Polarized_wrappers) (To : Polarized_wrappers) =
   struct
-    module C_morph = struct
-      type ('a, 'b, 'l, 'r) t = ('a, 'b, 'l * 'r) C.morph
-    end
-
-    module Morph = struct
-      type ('a, 'b, 'l, 'r) t =
-        ( 'a * From.P.polarity,
-          ('l * 'r) From.P.polarized,
-          'b * To.P.polarity,
-          ('l * 'r) To.P.polarized )
-        morph
-    end
-
-    (* To verify the safety of these conversions, observe that two different
-       instantiations of [Morph] are always incompatible. Then observe that
-       this [Make_apply] functor is never applied twice to the same arguments.
-       Accordingly, the various [morph] types constructed by these unsafe
-       conversions can never be confused with one another. *)
-    include Make_unsafe_conversions (C_morph) (Morph)
-
     let apply dst f m =
       To.wrap_mode (S.apply (To.unwrap_obj dst) f (From.unwrap_mode m))
   end
