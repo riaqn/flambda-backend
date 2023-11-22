@@ -17,6 +17,16 @@ module Magic_allow_disallow (X : Allow_disallow) :
     Obj.magic
 end
 
+module Make_unsafe_conversions (From : Misc.T4) (To : Misc.T4) : sig
+  val lift : ('a, 'b, 'c, 'd) From.t -> ('a, 'b, 'c, 'd) To.t
+
+  val lower : ('a, 'b, 'c, 'd) To.t -> ('a, 'b, 'c, 'd) From.t
+end = struct
+  let lift : ('a, 'b, 'c, 'd) From.t -> ('a, 'b, 'c, 'd) To.t = Obj.magic
+
+  let lower : ('a, 'b, 'c, 'd) To.t -> ('a, 'b, 'c, 'd) From.t = Obj.magic
+end
+
 (** Error returned by failed [submode a b]. [left] will be the lowest mode [a]
    can be, and [right] will be the highest mode [b] can be. And [left <= right]
    will be false, which is why the submode failed. *)
@@ -581,14 +591,6 @@ module Solver_polarized (C : Lattices_mono) = struct
 
   let append_changes = S.append_changes
 
-  type positive = private Positive
-
-  type negative = private Negative
-
-  type 'a pos = 'b * 'c constraint 'a = 'b * 'c
-
-  type 'a neg = 'c * 'b constraint 'a = 'b * 'c
-
   type 'a obj =
     | Positive : 'a C.obj -> ('a * positive) obj
     | Negative : 'a C.obj -> ('a * negative) obj
@@ -614,73 +616,67 @@ module Solver_polarized (C : Lattices_mono) = struct
     type 'd polarized = 'd neg
   end
 
-  module Pos_Pos = struct
-    let lift :
-          'a 'b 'l 'r.
-          ('a, 'b, 'l * 'r) C.morph ->
-          ('a * positive, ('l * 'r) pos, 'b * positive, ('l * 'r) pos) morph =
-      Obj.magic
+  (* Helper modules for constructing the 4 forms of [apply]. *)
+  module type Polarized_wrappers = sig
+    module P : Polarity
 
-    let un_pos_pos :
-          'a 'b 'l 'r.
-          ('a * positive, ('l * 'r) pos, 'b * positive, ('l * 'r) pos) morph ->
-          ('a, 'b, 'l * 'r) C.morph =
-      Obj.magic
+    val unwrap_obj : ('a * P.polarity) obj -> 'a C.obj
 
-    let apply (Positive dst : _ obj) f (Positive m) =
-      Positive (S.apply dst (un_pos_pos f) m)
+    val unwrap_mode : ('a * P.polarity, 'd P.polarized) mode -> ('a, 'd) S.mode
+
+    val wrap_mode : ('a, 'd) S.mode -> ('a * P.polarity, 'd P.polarized) mode
   end
 
-  module Pos_Neg = struct
-    let lift :
-          'a 'b 'l 'r.
-          ('a, 'b, 'l * 'r) C.morph ->
-          ('a * positive, ('l * 'r) pos, 'b * negative, ('l * 'r) neg) morph =
-      Obj.magic
+  module Pos_wrappers : Polarized_wrappers with module P = Pos = struct
+    module P = Pos
 
-    let un_pos_neg :
-          'a 'b 'l 'r.
-          ('a * positive, ('l * 'r) pos, 'b * negative, ('l * 'r) neg) morph ->
-          ('a, 'b, 'l * 'r) C.morph =
-      Obj.magic
+    let unwrap_obj (Positive dst : (_ * positive) obj) = dst
 
-    let apply (Negative dst : _ obj) f (Positive m) =
-      Negative (S.apply dst (un_pos_neg f) m)
+    let unwrap_mode (Positive m : (_ * positive, _) mode) = m
+
+    let wrap_mode m = Positive m
   end
 
-  module Neg_Pos = struct
-    let lift :
-          'a 'b 'l 'r.
-          ('a, 'b, 'l * 'r) C.morph ->
-          ('a * negative, ('l * 'r) neg, 'b * positive, ('l * 'r) pos) morph =
-      Obj.magic
+  module Neg_wrappers : Polarized_wrappers with module P = Neg = struct
+    module P = Neg
 
-    let un_neg_pos :
-          'a 'b 'l 'r.
-          ('a * negative, ('l * 'r) neg, 'b * positive, ('l * 'r) pos) morph ->
-          ('a, 'b, 'l * 'r) C.morph =
-      Obj.magic
+    let unwrap_obj (Negative dst : (_ * negative) obj) = dst
 
-    let apply (Positive dst : _ obj) f (Negative m) =
-      Positive (S.apply dst (un_neg_pos f) m)
+    let unwrap_mode (Negative m : (_ * negative, _) mode) = m
+
+    let wrap_mode m = Negative m
   end
 
-  module Neg_Neg = struct
-    let lift :
-          'a 'b 'l 'r.
-          ('a, 'b, 'l * 'r) C.morph ->
-          ('a * negative, ('l * 'r) neg, 'b * negative, ('l * 'r) neg) morph =
-      Obj.magic
+  module Make_apply (From : Polarized_wrappers) (To : Polarized_wrappers) =
+  struct
+    module C_morph = struct
+      type ('a, 'b, 'l, 'r) t = ('a, 'b, 'l * 'r) C.morph
+    end
 
-    let un_neg_neg :
-          'a 'b 'l 'r.
-          ('a * negative, ('l * 'r) neg, 'b * negative, ('l * 'r) neg) morph ->
-          ('a, 'b, 'l * 'r) C.morph =
-      Obj.magic
+    module Morph = struct
+      type ('a, 'b, 'l, 'r) t =
+        ( 'a * From.P.polarity,
+          ('l * 'r) From.P.polarized,
+          'b * To.P.polarity,
+          ('l * 'r) To.P.polarized )
+        morph
+    end
 
-    let apply (Negative dst : _ obj) f (Negative m) =
-      Negative (S.apply dst (un_neg_neg f) m)
+    (* To verify the safety of these conversions, observe that two different
+       instantiations of [Morph] are always incompatible. Then observe that
+       this [Make_apply] functor is never applied twice to the same arguments.
+       Accordingly, the various [morph] types constructed by these unsafe
+       conversions can never be confused with one another. *)
+    include Make_unsafe_conversions (C_morph) (Morph)
+
+    let apply dst f m =
+      To.wrap_mode (S.apply (To.unwrap_obj dst) (lower f) (From.unwrap_mode m))
   end
+
+  module Pos_Pos = Make_apply (Pos_wrappers) (Pos_wrappers)
+  module Pos_Neg = Make_apply (Pos_wrappers) (Neg_wrappers)
+  module Neg_Pos = Make_apply (Neg_wrappers) (Pos_wrappers)
+  module Neg_Neg = Make_apply (Neg_wrappers) (Neg_wrappers)
 
   let newvar : type a l r. a obj -> (a, l * r) mode = function
     | Positive obj ->

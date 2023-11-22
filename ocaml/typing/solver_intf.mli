@@ -114,6 +114,14 @@ module type Lattices_mono = sig
   val print_morph : 'b obj -> Format.formatter -> ('a, 'b, 'd) morph -> unit
 end
 
+type positive = private Positive
+
+type negative = private Negative
+
+type 'a pos = 'b * 'c constraint 'a = 'b * 'c
+
+type 'a neg = 'c * 'b constraint 'a = 'b * 'c
+
 module type Polarity = sig
   type polarity
 
@@ -139,14 +147,6 @@ module type S = sig
     val undo_changes : changes -> unit
 
     val append_changes : (changes ref -> unit) ref
-
-    type positive = private Positive
-
-    type negative = private Negative
-
-    type 'a pos = 'b * 'c constraint 'a = 'b * 'c
-
-    type 'a neg = 'c * 'b constraint 'a = 'b * 'c
 
     (* Construct a new category based on the original category [C]. Objects are
        two copies of the objects in [C] of opposite polarity. The positive copy

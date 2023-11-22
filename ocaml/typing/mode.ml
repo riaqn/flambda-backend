@@ -838,7 +838,7 @@ module Locality = struct
   module Obj = struct
     type const = Const.t
 
-    type polarity = S.positive
+    type polarity = positive
 
     let obj = C.Locality
 
@@ -862,7 +862,7 @@ module Regionality = struct
   module Obj = struct
     type const = Const.t
 
-    type polarity = S.positive
+    type polarity = positive
 
     let obj_s : (const * polarity) S.obj = S.Positive C.Regionality
   end
@@ -886,7 +886,7 @@ module Linearity = struct
   module Obj = struct
     type const = Const.t
 
-    type polarity = S.positive
+    type polarity = positive
 
     let obj = C.Linearity
 
@@ -911,7 +911,7 @@ module Uniqueness = struct
     type const = Const.t
 
     (* the negation of Uniqueness_op gives us the proper uniqueness *)
-    type polarity = S.negative
+    type polarity = negative
 
     let obj = C.Uniqueness_op
 
@@ -954,7 +954,7 @@ module Comonadic_with_regionality = struct
   module Obj = struct
     type const = Const.t
 
-    type polarity = S.positive
+    type polarity = positive
 
     let obj : const C.obj = C.Comonadic_with_regionality
 
@@ -1045,7 +1045,7 @@ module Comonadic_with_locality = struct
   module Obj = struct
     type const = Const.t
 
-    type polarity = S.positive
+    type polarity = positive
 
     let obj : const C.obj = C.Comonadic_with_locality
 
