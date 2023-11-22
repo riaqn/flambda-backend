@@ -114,6 +114,12 @@ module type Lattices_mono = sig
   val print_morph : 'b obj -> Format.formatter -> ('a, 'b, 'd) morph -> unit
 end
 
+module type Polarity = sig
+  type polarity
+
+  type 'd polarized constraint 'd = 'l * 'r
+end
+
 module type S = sig
   type 'a error =
     { left : 'a;
@@ -161,56 +167,54 @@ module type S = sig
     ['e] are source and destination adjoint status *)
     type ('a, 'd, 'b, 'e) morph
 
-    (** The monotone morphism from a positive lattice to a positive lattice  *)
-    val pos_pos :
-      ('a, 'b, 'd) C.morph ->
-      ('a * positive, 'd pos, 'b * positive, 'd pos) morph
-
-    (** The antitone morphism from a positive lattice to a negative lattice  *)
-    val pos_neg :
-      ('a, 'b, 'd) C.morph ->
-      ('a * positive, 'd pos, 'b * negative, 'd neg) morph
-
-    (** The antitone morphism from a negative lattice to a positive lattice  *)
-    val neg_pos :
-      ('a, 'b, 'd) C.morph ->
-      ('a * negative, 'd neg, 'b * positive, 'd pos) morph
-
-    (** The monotone morphism from a negative lattice to a negative lattice *)
-    val neg_neg :
-      ('a, 'b, 'd) C.morph ->
-      ('a * negative, 'd neg, 'b * negative, 'd neg) morph
-
     (* A mode with carrier type ['a] and left/right status ['d] derived from the
        morphism it contains. See comments for [morph] for the format of ['d] *)
     type ('a, 'd) mode
 
     include Allow_disallow with type ('a, _, 'd) t := ('a, 'd) mode
 
-    (** Returns the result of applying the morphism to the mode. *)
-    val pos_pos_apply :
-      ('b * positive) obj ->
-      ('a * positive, 'l * 'r, 'b * positive, 'l * 'r) morph ->
-      ('a * positive, 'l * 'r) mode ->
-      ('b * positive, 'l * 'r) mode
+    module Pos :
+      Polarity with type polarity = positive and type 'd polarized = 'd pos
 
-    val pos_neg_apply :
-      ('b * negative) obj ->
-      ('a * positive, 'l * 'r, 'b * negative, 'r * 'l) morph ->
-      ('a * positive, 'l * 'r) mode ->
-      ('b * negative, 'r * 'l) mode
+    module Neg :
+      Polarity with type polarity = negative and type 'd polarized = 'd neg
 
-    val neg_pos_apply :
-      ('b * positive) obj ->
-      ('a * negative, 'r * 'l, 'b * positive, 'l * 'r) morph ->
-      ('a * negative, 'r * 'l) mode ->
-      ('b * positive, 'l * 'r) mode
+    module type Polarized := sig
+      module From : Polarity
 
-    val neg_neg_apply :
-      ('b * negative) obj ->
-      ('a * negative, 'r * 'l, 'b * negative, 'r * 'l) morph ->
-      ('a * negative, 'r * 'l) mode ->
-      ('b * negative, 'r * 'l) mode
+      module To : Polarity
+
+      val lift :
+        ('a, 'b, 'd) C.morph ->
+        ( 'a * From.polarity,
+          'd From.polarized,
+          'b * To.polarity,
+          'd To.polarized )
+        morph
+
+      (** Returns the result of applying the morphism to the mode. *)
+      val apply :
+        ('b * To.polarity) obj ->
+        ( 'a * From.polarity,
+          ('l * 'r) From.polarized,
+          'b * To.polarity,
+          ('l * 'r) To.polarized )
+        morph ->
+        ('a * From.polarity, ('l * 'r) From.polarized) mode ->
+        ('b * To.polarity, ('l * 'r) To.polarized) mode
+    end
+
+    (** The monotone morphism from a positive lattice to a positive lattice  *)
+    module Pos_Pos : Polarized with module From := Pos and module To := Pos
+
+    (** The antitone morphism from a positive lattice to a negative lattice  *)
+    module Pos_Neg : Polarized with module From := Pos and module To := Neg
+
+    (** The antitone morphism from a negative lattice to a positive lattice  *)
+    module Neg_Pos : Polarized with module From := Neg and module To := Pos
+
+    (** The monotone morphism from a negative lattice to a negative lattice *)
+    module Neg_Neg : Polarized with module From := Neg and module To := Neg
 
     (** Returns the mode representing the given constant. *)
     val of_const : ('a * 'p) obj -> 'a -> ('a * 'p, 'l * 'r) mode

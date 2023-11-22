@@ -595,54 +595,6 @@ module Solver_polarized (C : Lattices_mono) = struct
 
   type ('a, 'd, 'b, 'e) morph
 
-  let pos_pos :
-        'a 'b 'l 'r.
-        ('a, 'b, 'l * 'r) C.morph ->
-        ('a * positive, ('l * 'r) pos, 'b * positive, ('l * 'r) pos) morph =
-    Obj.magic
-
-  let un_pos_pos :
-        'a 'b 'l 'r.
-        ('a * positive, ('l * 'r) pos, 'b * positive, ('l * 'r) pos) morph ->
-        ('a, 'b, 'l * 'r) C.morph =
-    Obj.magic
-
-  let pos_neg :
-        'a 'b 'l 'r.
-        ('a, 'b, 'l * 'r) C.morph ->
-        ('a * positive, ('l * 'r) pos, 'b * negative, ('l * 'r) neg) morph =
-    Obj.magic
-
-  let un_pos_neg :
-        'a 'b 'l 'r.
-        ('a * positive, ('l * 'r) pos, 'b * negative, ('l * 'r) neg) morph ->
-        ('a, 'b, 'l * 'r) C.morph =
-    Obj.magic
-
-  let neg_pos :
-        'a 'b 'l 'r.
-        ('a, 'b, 'l * 'r) C.morph ->
-        ('a * negative, ('l * 'r) neg, 'b * positive, ('l * 'r) pos) morph =
-    Obj.magic
-
-  let un_neg_pos :
-        'a 'b 'l 'r.
-        ('a * negative, ('l * 'r) neg, 'b * positive, ('l * 'r) pos) morph ->
-        ('a, 'b, 'l * 'r) C.morph =
-    Obj.magic
-
-  let neg_neg :
-        'a 'b 'l 'r.
-        ('a, 'b, 'l * 'r) C.morph ->
-        ('a * negative, ('l * 'r) neg, 'b * negative, ('l * 'r) neg) morph =
-    Obj.magic
-
-  let un_neg_neg :
-        'a 'b 'l 'r.
-        ('a * negative, ('l * 'r) neg, 'b * negative, ('l * 'r) neg) morph ->
-        ('a, 'b, 'l * 'r) C.morph =
-    Obj.magic
-
   type ('a, 'd) mode =
     | Positive : ('a, 'd) S.mode -> ('a * positive, 'd pos) mode
     | Negative : ('a, 'd) S.mode -> ('a * negative, 'd neg) mode
@@ -650,17 +602,85 @@ module Solver_polarized (C : Lattices_mono) = struct
      submoding on the new category to submoding on the original category.
      Hopefully everything here will be inlined and optimized away. *)
 
-  let pos_pos_apply (Positive dst : _ obj) f (Positive m) =
-    Positive (S.apply dst (un_pos_pos f) m)
+  module Pos = struct
+    type polarity = positive
 
-  let pos_neg_apply (Negative dst : _ obj) f (Positive m) =
-    Negative (S.apply dst (un_pos_neg f) m)
+    type 'd polarized = 'd pos
+  end
 
-  let neg_pos_apply (Positive dst : _ obj) f (Negative m) =
-    Positive (S.apply dst (un_neg_pos f) m)
+  module Neg = struct
+    type polarity = negative
 
-  let neg_neg_apply (Negative dst : _ obj) f (Negative m) =
-    Negative (S.apply dst (un_neg_neg f) m)
+    type 'd polarized = 'd neg
+  end
+
+  module Pos_Pos = struct
+    let lift :
+          'a 'b 'l 'r.
+          ('a, 'b, 'l * 'r) C.morph ->
+          ('a * positive, ('l * 'r) pos, 'b * positive, ('l * 'r) pos) morph =
+      Obj.magic
+
+    let un_pos_pos :
+          'a 'b 'l 'r.
+          ('a * positive, ('l * 'r) pos, 'b * positive, ('l * 'r) pos) morph ->
+          ('a, 'b, 'l * 'r) C.morph =
+      Obj.magic
+
+    let apply (Positive dst : _ obj) f (Positive m) =
+      Positive (S.apply dst (un_pos_pos f) m)
+  end
+
+  module Pos_Neg = struct
+    let lift :
+          'a 'b 'l 'r.
+          ('a, 'b, 'l * 'r) C.morph ->
+          ('a * positive, ('l * 'r) pos, 'b * negative, ('l * 'r) neg) morph =
+      Obj.magic
+
+    let un_pos_neg :
+          'a 'b 'l 'r.
+          ('a * positive, ('l * 'r) pos, 'b * negative, ('l * 'r) neg) morph ->
+          ('a, 'b, 'l * 'r) C.morph =
+      Obj.magic
+
+    let apply (Negative dst : _ obj) f (Positive m) =
+      Negative (S.apply dst (un_pos_neg f) m)
+  end
+
+  module Neg_Pos = struct
+    let lift :
+          'a 'b 'l 'r.
+          ('a, 'b, 'l * 'r) C.morph ->
+          ('a * negative, ('l * 'r) neg, 'b * positive, ('l * 'r) pos) morph =
+      Obj.magic
+
+    let un_neg_pos :
+          'a 'b 'l 'r.
+          ('a * negative, ('l * 'r) neg, 'b * positive, ('l * 'r) pos) morph ->
+          ('a, 'b, 'l * 'r) C.morph =
+      Obj.magic
+
+    let apply (Positive dst : _ obj) f (Negative m) =
+      Positive (S.apply dst (un_neg_pos f) m)
+  end
+
+  module Neg_Neg = struct
+    let lift :
+          'a 'b 'l 'r.
+          ('a, 'b, 'l * 'r) C.morph ->
+          ('a * negative, ('l * 'r) neg, 'b * negative, ('l * 'r) neg) morph =
+      Obj.magic
+
+    let un_neg_neg :
+          'a 'b 'l 'r.
+          ('a * negative, ('l * 'r) neg, 'b * negative, ('l * 'r) neg) morph ->
+          ('a, 'b, 'l * 'r) C.morph =
+      Obj.magic
+
+    let apply (Negative dst : _ obj) f (Negative m) =
+      Negative (S.apply dst (un_neg_neg f) m)
+  end
 
   let newvar : type a l r. a obj -> (a, l * r) mode = function
     | Positive obj ->
