@@ -616,21 +616,25 @@ module Solver_polarized (C : Lattices_mono) = struct
     type 'd polarized = 'd neg
   end
 
-  module Pos_Pos = struct
-    let apply (Positive dst : _ obj) f (Positive m) = Positive (S.apply dst f m)
+  module Apply (From : Polarity) (To : Polarity) = struct
+    type ('a, 'b, 'd) apply =
+      ('b * To.polarity) obj ->
+      ('a, 'b, 'd) C.morph ->
+      ('a * From.polarity, 'd From.polarized) mode ->
+      ('b * To.polarity, 'd To.polarized) mode
   end
 
-  module Pos_Neg = struct
-    let apply (Negative dst : _ obj) f (Positive m) = Negative (S.apply dst f m)
-  end
+  let apply_pos_pos (Positive dst : _ obj) f (Positive m) =
+    Positive (S.apply dst f m)
 
-  module Neg_Pos = struct
-    let apply (Positive dst : _ obj) f (Negative m) = Positive (S.apply dst f m)
-  end
+  let apply_neg_pos (Positive dst : _ obj) f (Negative m) =
+    Positive (S.apply dst f m)
 
-  module Neg_Neg = struct
-    let apply (Negative dst : _ obj) f (Negative m) = Negative (S.apply dst f m)
-  end
+  let apply_pos_neg (Negative dst : _ obj) f (Positive m) =
+    Negative (S.apply dst f m)
+
+  let apply_neg_neg (Negative dst : _ obj) f (Negative m) =
+    Negative (S.apply dst f m)
 
   let newvar : type a l r. a obj -> (a, l * r) mode = function
     | Positive obj ->
