@@ -760,9 +760,9 @@ let append_changes = S.append_changes
 module type Obj = sig
   type const
 
-  type polarity
+  module Ops : S.Polarity_ops
 
-  val obj_s : (const * polarity) S.obj
+  val obj_s : (const * Ops.polarity) S.obj
 end
 
 let equate_from_submode submode m0 m1 =
@@ -776,7 +776,7 @@ let equate_from_submode submode m0 m1 =
 module Common (Obj : Obj) = struct
   open Obj
 
-  type 'd t = (const * polarity, 'd) S.mode
+  type 'd t = (const * Ops.polarity, 'd) S.mode
 
   type l = (allowed * disallowed) t
 
@@ -796,21 +796,21 @@ module Common (Obj : Obj) = struct
 
   let allow_right m = S.allow_right m
 
-  let newvar () = S.newvar obj_s
+  let newvar () = Ops.newvar obj_s
 
-  let min = S.min obj_s
+  let min = Ops.min obj_s
 
-  let max = S.max obj_s
+  let max = Ops.max obj_s
 
-  let newvar_above m = S.newvar_above obj_s m
+  let newvar_above m = Ops.newvar_above obj_s m
 
-  let newvar_below m = S.newvar_below obj_s m
+  let newvar_below m = Ops.newvar_below obj_s m
 
-  let submode m0 m1 : (unit, error) result = S.submode obj_s m0 m1
+  let submode m0 m1 : (unit, error) result = Ops.submode obj_s m0 m1
 
-  let join l = S.join obj_s l
+  let join l = Ops.join obj_s l
 
-  let meet l = S.meet obj_s l
+  let meet l = Ops.meet obj_s l
 
   let submode_exn m0 m1 = assert (submode m0 m1 |> Result.is_ok)
 
@@ -820,16 +820,16 @@ module Common (Obj : Obj) = struct
 
   let print ?(raw = false) ?verbose () ppf m =
     if raw
-    then S.print_raw ?verbose obj_s ppf m
-    else S.print ?verbose obj_s ppf m
+    then Ops.print_raw ?verbose obj_s ppf m
+    else Ops.print ?verbose obj_s ppf m
 
-  let zap_to_ceil m = S.zap_to_ceil obj_s m
+  let zap_to_ceil m = Ops.zap_to_ceil obj_s m
 
-  let zap_to_floor m = S.zap_to_floor obj_s m
+  let zap_to_floor m = Ops.zap_to_floor obj_s m
 
-  let of_const : type l r. const -> (l * r) t = fun a -> S.of_const obj_s a
+  let of_const : type l r. const -> (l * r) t = fun a -> Ops.of_const obj_s a
 
-  let check_const m = S.check_const obj_s m
+  let check_const m = Ops.check_const obj_s m
 end
 
 module Locality = struct
@@ -838,11 +838,11 @@ module Locality = struct
   module Obj = struct
     type const = Const.t
 
-    type polarity = positive
+    module Ops = S.Positive_ops
 
     let obj = C.Locality
 
-    let obj_s : (const * polarity) S.obj = S.Positive obj
+    let obj_s : (const * Ops.polarity) S.obj = S.Positive obj
   end
 
   include Common (Obj)
@@ -862,9 +862,9 @@ module Regionality = struct
   module Obj = struct
     type const = Const.t
 
-    type polarity = positive
+    module Ops = S.Positive_ops
 
-    let obj_s : (const * polarity) S.obj = S.Positive C.Regionality
+    let obj_s : (const * Ops.polarity) S.obj = S.Positive C.Regionality
   end
 
   include Common (Obj)
@@ -886,11 +886,11 @@ module Linearity = struct
   module Obj = struct
     type const = Const.t
 
-    type polarity = positive
+    module Ops = S.Positive_ops
 
     let obj = C.Linearity
 
-    let obj_s : (const * polarity) S.obj = S.Positive obj
+    let obj_s : (const * Ops.polarity) S.obj = S.Positive obj
   end
 
   include Common (Obj)
@@ -911,11 +911,11 @@ module Uniqueness = struct
     type const = Const.t
 
     (* the negation of Uniqueness_op gives us the proper uniqueness *)
-    type polarity = negative
+    module Ops = S.Negative_ops
 
     let obj = C.Uniqueness_op
 
-    let obj_s : (const * polarity) S.obj = S.Negative obj
+    let obj_s : (const * Ops.polarity) S.obj = S.Negative obj
   end
 
   include Common (Obj)
@@ -954,11 +954,11 @@ module Comonadic_with_regionality = struct
   module Obj = struct
     type const = Const.t
 
-    type polarity = positive
+    module Ops = S.Positive_ops
 
     let obj : const C.obj = C.Comonadic_with_regionality
 
-    let obj_s : (const * polarity) S.obj = S.Positive obj
+    let obj_s : (const * Ops.polarity) S.obj = S.Positive obj
   end
 
   include Common (Obj)
@@ -1041,11 +1041,11 @@ module Comonadic_with_locality = struct
   module Obj = struct
     type const = Const.t
 
-    type polarity = positive
+    module Ops = S.Positive_ops
 
     let obj : const C.obj = C.Comonadic_with_locality
 
-    let obj_s : (const * polarity) S.obj = S.Positive obj
+    let obj_s : (const * Ops.polarity) S.obj = S.Positive obj
   end
 
   include Common (Obj)
