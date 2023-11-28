@@ -665,6 +665,7 @@ module Solver_polarized (C : Lattices_mono) = struct
 
     type ('a, 'd) mode0 =
       | Neg : ('a, 'd) S.mode -> ('a * negative, 'd neg) mode0
+    [@@unboxed]
 
     type ('a_p, 'd) mode = ('a_p, 'd) mode0 constraint 'a_p = 'a * negative
 
