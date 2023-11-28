@@ -264,26 +264,32 @@ module type S = sig
     module Negative :
       Polarity_ops with type polarity = negative and type 'd polarized = 'd neg
 
-    (* This is just needed to generate the types for the [apply_*] functions;
-       do not use. *)
-    module Apply (From : Polarity_ops) (To : Polarity_ops) : sig
-      type ('a, 'b, 'd) apply =
-        ('b * To.polarity) obj ->
-        ('a, 'b, 'd) C.morph ->
-        ('a * From.polarity, 'd From.polarized) From.mode ->
-        ('b * To.polarity, 'd To.polarized) To.mode
-    end
-
     (** The monotone morphism from a positive lattice to a positive lattice *)
-    val apply_pos_pos : ('a, 'b, 'd) Apply(Positive)(Positive).apply
+    val apply_pos_pos :
+      ('b * positive) obj ->
+      ('a, 'b, 'l * 'r) C.morph ->
+      ('a * positive, 'l * 'r) Positive.mode ->
+      ('b * positive, 'l * 'r) Positive.mode
 
     (** The antitone morphism from a positive lattice to a negative lattice *)
-    val apply_pos_neg : ('a, 'b, 'd) Apply(Positive)(Negative).apply
+    val apply_pos_neg :
+      ('b * negative) obj ->
+      ('a, 'b, 'l * 'r) C.morph ->
+      ('a * positive, 'l * 'r) Positive.mode ->
+      ('b * negative, 'r * 'l) Negative.mode
 
     (** The antitone morphism from a negative lattice to a positive lattice *)
-    val apply_neg_pos : ('a, 'b, 'd) Apply(Negative)(Positive).apply
+    val apply_neg_pos :
+      ('b * positive) obj ->
+      ('a, 'b, 'l * 'r) C.morph ->
+      ('a * negative, 'r * 'l) Negative.mode ->
+      ('b * positive, 'l * 'r) Positive.mode
 
     (** The monotone morphism from a negative lattice to a negative lattice *)
-    val apply_neg_neg : ('a, 'b, 'd) Apply(Negative)(Negative).apply
+    val apply_neg_neg :
+      ('b * negative) obj ->
+      ('a, 'b, 'l * 'r) C.morph ->
+      ('a * negative, 'r * 'l) Negative.mode ->
+      ('b * negative, 'r * 'l) Negative.mode
   end
 end

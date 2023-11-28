@@ -729,14 +729,6 @@ module Solver_polarized (C : Lattices_mono) = struct
       match obj with Negative obj -> S.print_raw ~verbose obj ppf m
   end
 
-  module Apply (From : Polarity_ops) (To : Polarity_ops) = struct
-    type ('a, 'b, 'd) apply =
-      ('b * To.polarity) obj ->
-      ('a, 'b, 'd) C.morph ->
-      ('a * From.polarity, 'd From.polarized) From.mode ->
-      ('b * To.polarity, 'd To.polarized) To.mode
-  end
-
   let apply_pos_pos (Positive dst : _ obj) f m = S.apply dst f m
 
   let apply_neg_pos (Positive dst : _ obj) f (Negative.Neg m) = S.apply dst f m
