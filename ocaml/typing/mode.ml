@@ -932,19 +932,19 @@ module Uniqueness = struct
 end
 
 let unique_to_linear m =
-  S.apply_neg_pos Linearity.Obj.obj_s C.Unique_to_linear m
+  S.Negative.apply_antitone Linearity.Obj.obj_s C.Unique_to_linear m
 
 let linear_to_unique m =
-  S.apply_pos_neg Uniqueness.Obj.obj_s C.Linear_to_unique m
+  S.Positive.apply_antitone Uniqueness.Obj.obj_s C.Linear_to_unique m
 
 let regional_to_local m =
-  S.apply_pos_pos Locality.Obj.obj_s C.Regional_to_local m
+  S.Positive.apply_monotone Locality.Obj.obj_s C.Regional_to_local m
 
 let locality_as_regionality m =
-  S.apply_pos_pos Regionality.Obj.obj_s C.Locality_as_regionality m
+  S.Positive.apply_monotone Regionality.Obj.obj_s C.Locality_as_regionality m
 
 let regional_to_global m =
-  S.apply_pos_pos Locality.Obj.obj_s C.Regional_to_global m
+  S.Positive.apply_monotone Locality.Obj.obj_s C.Regional_to_global m
 
 module Const = struct
   let unique_to_linear a = C.unique_to_linear a
@@ -972,40 +972,44 @@ module Comonadic_with_regionality = struct
   type equate_error = equate_step * error
 
   let regionality m =
-    S.apply_pos_pos Regionality.Obj.obj_s (C.Proj (Obj.obj, Axis0)) m
+    S.Positive.apply_monotone Regionality.Obj.obj_s (C.Proj (Obj.obj, Axis0)) m
 
   let min_with_regionality m =
-    S.apply_pos_pos Obj.obj_s (C.Min_with Axis0) (S.Positive.disallow_right m)
+    S.Positive.apply_monotone Obj.obj_s (C.Min_with Axis0)
+      (S.Positive.disallow_right m)
 
   let max_with_regionality m =
-    S.apply_pos_pos Obj.obj_s (C.Max_with Axis0) (S.Positive.disallow_left m)
+    S.Positive.apply_monotone Obj.obj_s (C.Max_with Axis0)
+      (S.Positive.disallow_left m)
 
   let set_regionality_max m =
-    S.apply_pos_pos Obj.obj_s
+    S.Positive.apply_monotone Obj.obj_s
       (C.Set (Product.SAxis0, C.Const_max Regionality))
       (S.Positive.disallow_left m)
 
   let set_regionality_min m =
-    S.apply_pos_pos Obj.obj_s
+    S.Positive.apply_monotone Obj.obj_s
       (C.Set (Product.SAxis0, C.Const_min Regionality))
       (S.Positive.disallow_right m)
 
   let linearity m =
-    S.apply_pos_pos Linearity.Obj.obj_s (C.Proj (Obj.obj, Axis1)) m
+    S.Positive.apply_monotone Linearity.Obj.obj_s (C.Proj (Obj.obj, Axis1)) m
 
   let min_with_linearity m =
-    S.apply_pos_pos Obj.obj_s (C.Min_with Axis1) (S.Positive.disallow_right m)
+    S.Positive.apply_monotone Obj.obj_s (C.Min_with Axis1)
+      (S.Positive.disallow_right m)
 
   let max_with_linearity m =
-    S.apply_pos_pos Obj.obj_s (C.Max_with Axis1) (S.Positive.disallow_left m)
+    S.Positive.apply_monotone Obj.obj_s (C.Max_with Axis1)
+      (S.Positive.disallow_left m)
 
   let set_linearity_max m =
-    S.apply_pos_pos Obj.obj_s
+    S.Positive.apply_monotone Obj.obj_s
       (C.Set (Product.SAxis1, C.Const_max Linearity))
       (S.Positive.disallow_left m)
 
   let set_linearity_min m =
-    S.apply_pos_pos Obj.obj_s
+    S.Positive.apply_monotone Obj.obj_s
       (C.Set (Product.SAxis1, C.Const_min Linearity))
       (S.Positive.disallow_right m)
 
@@ -1059,40 +1063,44 @@ module Comonadic_with_locality = struct
   type equate_error = equate_step * error
 
   let locality m =
-    S.apply_pos_pos Locality.Obj.obj_s (C.Proj (Obj.obj, Axis0)) m
+    S.Positive.apply_monotone Locality.Obj.obj_s (C.Proj (Obj.obj, Axis0)) m
 
   let min_with_locality m =
-    S.apply_pos_pos Obj.obj_s (C.Min_with Axis0) (S.Positive.disallow_right m)
+    S.Positive.apply_monotone Obj.obj_s (C.Min_with Axis0)
+      (S.Positive.disallow_right m)
 
   let max_with_locality m =
-    S.apply_pos_pos Obj.obj_s (C.Max_with Axis0) (S.Positive.disallow_left m)
+    S.Positive.apply_monotone Obj.obj_s (C.Max_with Axis0)
+      (S.Positive.disallow_left m)
 
   let set_locality_max m =
-    S.apply_pos_pos Obj.obj_s
+    S.Positive.apply_monotone Obj.obj_s
       (C.Set (Product.SAxis0, C.Const_max Locality))
       (S.Positive.disallow_left m)
 
   let set_locality_min m =
-    S.apply_pos_pos Obj.obj_s
+    S.Positive.apply_monotone Obj.obj_s
       (C.Set (Product.SAxis0, C.Const_min Locality))
       (S.Positive.disallow_right m)
 
   let linearity m =
-    S.apply_pos_pos Linearity.Obj.obj_s (C.Proj (Obj.obj, Axis1)) m
+    S.Positive.apply_monotone Linearity.Obj.obj_s (C.Proj (Obj.obj, Axis1)) m
 
   let min_with_linearity m =
-    S.apply_pos_pos Obj.obj_s (C.Min_with Axis1) (S.Positive.disallow_right m)
+    S.Positive.apply_monotone Obj.obj_s (C.Min_with Axis1)
+      (S.Positive.disallow_right m)
 
   let max_with_linearity m =
-    S.apply_pos_pos Obj.obj_s (C.Max_with Axis1) (S.Positive.disallow_left m)
+    S.Positive.apply_monotone Obj.obj_s (C.Max_with Axis1)
+      (S.Positive.disallow_left m)
 
   let set_linearity_max m =
-    S.apply_pos_pos Obj.obj_s
+    S.Positive.apply_monotone Obj.obj_s
       (C.Set (Product.SAxis1, C.Const_max Linearity))
       (S.Positive.disallow_left m)
 
   let set_linearity_min m =
-    S.apply_pos_pos Obj.obj_s
+    S.Positive.apply_monotone Obj.obj_s
       (C.Set (Product.SAxis1, C.Const_min Linearity))
       (S.Positive.disallow_right m)
 
@@ -1675,7 +1683,7 @@ end
 let alloc_as_value m =
   let { comonadic; monadic } = m in
   let comonadic =
-    S.apply_pos_pos Value.Comonadic.Obj.obj_s
+    S.Positive.apply_monotone Value.Comonadic.Obj.obj_s
       (C.Set (Product.SAxis0, C.Locality_as_regionality))
       comonadic
   in
@@ -1684,7 +1692,7 @@ let alloc_as_value m =
 let alloc_to_value_l2r m =
   let { comonadic; monadic } = Alloc.disallow_right m in
   let comonadic =
-    S.apply_pos_pos Value.Comonadic.Obj.obj_s
+    S.Positive.apply_monotone Value.Comonadic.Obj.obj_s
       (C.Set (Product.SAxis0, C.Local_to_regional))
       comonadic
   in
@@ -1694,7 +1702,7 @@ let value_to_alloc_r2g : type l r. (l * r) Value.t -> (l * r) Alloc.t =
  fun m ->
   let { comonadic; monadic } = m in
   let comonadic =
-    S.apply_pos_pos Alloc.Comonadic.Obj.obj_s
+    S.Positive.apply_monotone Alloc.Comonadic.Obj.obj_s
       (C.Set (Product.SAxis0, C.Regional_to_global))
       comonadic
   in
@@ -1703,7 +1711,7 @@ let value_to_alloc_r2g : type l r. (l * r) Value.t -> (l * r) Alloc.t =
 let value_to_alloc_r2l m =
   let { comonadic; monadic } = m in
   let comonadic =
-    S.apply_pos_pos Alloc.Comonadic.Obj.obj_s
+    S.Positive.apply_monotone Alloc.Comonadic.Obj.obj_s
       (C.Set (Product.SAxis0, C.Regional_to_local))
       comonadic
   in

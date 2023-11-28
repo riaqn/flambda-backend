@@ -614,10 +614,22 @@ module Solver_polarized (C : Lattices_mono) = struct
     | Negative : 'a C.obj -> ('a * negative) obj
 
   module type Polarity_ops =
-    Polarity_ops with type 'a obj := 'a obj and type 'a error := 'a error
+    Polarity_ops
+      with type 'a obj := 'a obj
+       and type ('a, 'b, 'd) morph := ('a, 'b, 'd) C.morph
+       and type 'a error := 'a error
 
-  module Positive = struct
+  module rec Positive :
+    (Polarity_ops
+      with type polarity = positive
+       and type 'd polarized = 'd pos
+       and type not_polarity = negative
+       and type ('a, 'd) not_mode = ('a, 'd) Negative.mode) = struct
     include Pos
+
+    type not_polarity = negative
+
+    type ('a, 'd) not_mode = ('a, 'd) Negative.mode
 
     type ('a, 'd) mode = ('a, 'd) S.mode constraint 'd = 'l * 'r
 
@@ -670,10 +682,23 @@ module Solver_polarized (C : Lattices_mono) = struct
 
     let print_raw ?(verbose = false) obj ppf m =
       match obj with Positive obj -> S.print_raw ~verbose obj ppf m
+
+    let apply_monotone (Positive dst) f m = S.apply dst f m
+
+    let apply_antitone (Negative dst) f m = S.apply dst f m
   end
 
-  module Negative = struct
+  and Negative :
+    (Polarity_ops
+      with type polarity = negative
+       and type 'd polarized = 'd neg
+       and type not_polarity = positive
+       and type ('a, 'd) not_mode = ('a, 'd) Positive.mode) = struct
     include Neg
+
+    type not_polarity = positive
+
+    type ('a, 'd) not_mode = ('a, 'd) Positive.mode
 
     type ('a, 'd) mode = ('a, 'r * 'l) S.mode constraint 'd = 'l * 'r
 
@@ -739,13 +764,9 @@ module Solver_polarized (C : Lattices_mono) = struct
 
     let print_raw ?(verbose = false) obj ppf m =
       match obj with Negative obj -> S.print_raw ~verbose obj ppf m
+
+    let apply_monotone (Negative dst) f m = S.apply dst f m
+
+    let apply_antitone (Positive dst) f m = S.apply dst f m
   end
-
-  let apply_pos_pos (Positive dst : _ obj) f m = S.apply dst f m
-
-  let apply_neg_pos (Positive dst : _ obj) f m = S.apply dst f m
-
-  let apply_pos_neg (Negative dst : _ obj) f m = S.apply dst f m
-
-  let apply_neg_neg (Negative dst : _ obj) f m = S.apply dst f m
 end
