@@ -620,11 +620,11 @@ module Solver_polarized (C : Lattices_mono) = struct
 
     type 'a not_obj = 'a Negative.obj
 
-    type 'a obj = Positive of 'a C.obj [@@unboxed]
+    type 'a obj = 'a C.obj
 
-    let lift_obj o = Positive o
+    let lift_obj o = o
 
-    let lower_obj (Positive o) = o
+    let lower_obj o = o
 
     type ('a, 'd) mode = ('a, 'd) S.mode constraint 'd = 'l * 'r
 
@@ -640,45 +640,35 @@ module Solver_polarized (C : Lattices_mono) = struct
       let allow_left = S.allow_left
     end)
 
-    let newvar = function Positive obj -> S.newvar obj
+    let newvar = S.newvar
 
-    let submode = function Positive obj -> fun m0 m1 -> S.submode obj m0 m1
+    let submode = S.submode
 
-    let join = function Positive obj -> fun l -> S.join obj l
+    let join = S.join
 
-    let meet = function Positive obj -> fun l -> S.meet obj l
+    let meet = S.meet
 
-    let of_const = function Positive _ -> fun a -> S.of_const a
+    let of_const _ = S.of_const
 
-    let min = function Positive obj -> S.min obj
+    let min = S.min
 
-    let max = function Positive obj -> S.max obj
+    let max = S.max
 
-    let zap_to_floor = function Positive obj -> fun m -> S.zap_to_floor obj m
+    let zap_to_floor = S.zap_to_floor
 
-    let zap_to_ceil = function Positive obj -> fun m -> S.zap_to_ceil obj m
+    let zap_to_ceil = S.zap_to_ceil
 
-    let newvar_above = function
-      | Positive obj ->
-        fun m ->
-          let m, b = S.newvar_above obj m in
-          m, b
+    let newvar_above = S.newvar_above
 
-    let newvar_below = function
-      | Positive obj ->
-        fun m ->
-          let m, b = S.newvar_below obj m in
-          m, b
+    let newvar_below = S.newvar_below
 
-    let check_const = function Positive obj -> fun m -> S.check_const obj m
+    let check_const = S.check_const
 
-    let print ?(verbose = false) obj ppf m =
-      match obj with Positive obj -> S.print ~verbose obj ppf m
+    let print ?(verbose = false) = S.print ~verbose
 
-    let print_raw ?(verbose = false) obj ppf m =
-      match obj with Positive obj -> S.print_raw ~verbose obj ppf m
+    let print_raw ?(verbose = false) = S.print_raw ~verbose
 
-    let apply_monotone (Positive dst) f m = S.apply dst f m
+    let apply_monotone = S.apply
 
     let apply_antitone dst f m = S.apply (Negative.lower_obj dst) f m
   end
@@ -700,11 +690,11 @@ module Solver_polarized (C : Lattices_mono) = struct
 
     type 'a not_obj = 'a Positive.obj
 
-    type 'a obj = Negative of 'a C.obj [@@unboxed]
+    type 'a obj = 'a C.obj
 
-    let lift_obj o = Negative o
+    let lift_obj o = o
 
-    let lower_obj (Negative o) = o
+    let lower_obj o = o
 
     type ('a, 'd) mode = ('a, 'r * 'l) S.mode constraint 'd = 'l * 'r
 
@@ -720,58 +710,35 @@ module Solver_polarized (C : Lattices_mono) = struct
       let allow_left = S.allow_right
     end)
 
-    let newvar = function
-      | Negative obj ->
-        let m = S.newvar obj in
-        m
+    let newvar = S.newvar
 
-    let submode = function
-      | Negative obj -> (
-        fun m0 m1 -> match m0, m1 with m0, m1 -> S.submode obj m1 m0)
+    let submode obj m0 m1 = S.submode obj m1 m0
 
-    let join = function
-      | Negative obj ->
-        fun l ->
-          let l = List.map (fun m -> m) l in
-          S.meet obj l
+    let join = S.meet
 
-    let meet = function
-      | Negative obj ->
-        fun l ->
-          let l = List.map (fun m -> m) l in
-          S.join obj l
+    let meet = S.join
 
-    let of_const = function Negative _ -> fun a -> S.of_const a
+    let of_const _ = S.of_const
 
-    let min = function Negative obj -> S.max obj
+    let min = S.max
 
-    let max = function Negative obj -> S.min obj
+    let max = S.min
 
-    let zap_to_floor = function Negative obj -> fun m -> S.zap_to_ceil obj m
+    let zap_to_floor = S.zap_to_ceil
 
-    let zap_to_ceil = function Negative obj -> fun m -> S.zap_to_floor obj m
+    let zap_to_ceil = S.zap_to_floor
 
-    let newvar_above = function
-      | Negative obj ->
-        fun m ->
-          let m, b = S.newvar_below obj m in
-          m, b
+    let newvar_above = S.newvar_below
 
-    let newvar_below = function
-      | Negative obj ->
-        fun m ->
-          let m, b = S.newvar_above obj m in
-          m, b
+    let newvar_below = S.newvar_above
 
-    let check_const = function Negative obj -> fun m -> S.check_const obj m
+    let check_const = S.check_const
 
-    let print ?(verbose = false) obj ppf m =
-      match obj with Negative obj -> S.print ~verbose obj ppf m
+    let print ?(verbose = false) = S.print ~verbose
 
-    let print_raw ?(verbose = false) obj ppf m =
-      match obj with Negative obj -> S.print_raw ~verbose obj ppf m
+    let print_raw ?(verbose = false) = S.print_raw ~verbose
 
-    let apply_monotone (Negative dst) f m = S.apply dst f m
+    let apply_monotone dst f m = S.apply dst f m
 
     let apply_antitone dst f m = S.apply (Positive.lower_obj dst) f m
   end
