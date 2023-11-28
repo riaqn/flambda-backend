@@ -619,11 +619,10 @@ module Solver_polarized (C : Lattices_mono) = struct
   module Positive = struct
     include Pos
 
-    type ('a_p, 'd) mode = ('a, 'd) S.mode
-      constraint 'a_p = 'a * positive constraint 'd = 'l * 'r
+    type ('a, 'd) mode = ('a, 'd) S.mode constraint 'd = 'l * 'r
 
     include Magic_allow_disallow (struct
-      type ('a, _, 'd) sided = ('a * positive, 'd) mode
+      type ('a, _, 'd) sided = ('a, 'd) mode
 
       let disallow_right = S.disallow_right
 
@@ -676,11 +675,10 @@ module Solver_polarized (C : Lattices_mono) = struct
   module Negative = struct
     include Neg
 
-    type ('a_p, 'd) mode = ('a, 'r * 'l) S.mode
-      constraint 'a_p = 'a * negative constraint 'd = 'l * 'r
+    type ('a, 'd) mode = ('a, 'r * 'l) S.mode constraint 'd = 'l * 'r
 
     include Magic_allow_disallow (struct
-      type ('a, _, 'd) sided = ('a * negative, 'd) mode
+      type ('a, _, 'd) sided = ('a, 'd) mode
 
       let disallow_right = S.disallow_left
 

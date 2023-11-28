@@ -144,69 +144,58 @@ module type Polarity_ops = sig
 
   (** A mode with carrier type ['a] and left/right status ['d] derived from the
      morphism it contains. See comments for [morph] for the format of ['d] *)
-  type ('a_p, 'd) mode constraint 'a_p = 'a * polarity constraint 'd = 'l * 'r
+  type ('a, 'd) mode constraint 'd = 'l * 'r
 
-  include Allow_disallow with type ('a, _, 'd) sided = ('a * polarity, 'd) mode
+  include Allow_disallow with type ('a, _, 'd) sided = ('a, 'd) mode
 
   (** Returns the mode representing the given constant. *)
-  val of_const : ('a * polarity) obj -> 'a -> ('a * polarity, 'l * 'r) mode
+  val of_const : ('a * polarity) obj -> 'a -> ('a, 'l * 'r) mode
 
   (** The minimum mode in the lattice *)
-  val min : ('a * polarity) obj -> ('a * polarity, 'l * 'r) mode
+  val min : ('a * polarity) obj -> ('a, 'l * 'r) mode
 
   (** The maximum mode in the lattice *)
-  val max : ('a * polarity) obj -> ('a * polarity, 'l * 'r) mode
+  val max : ('a * polarity) obj -> ('a, 'l * 'r) mode
 
   (** Pushes the mode variable to the lowest constant possible. *)
-  val zap_to_floor :
-    ('a * polarity) obj -> ('a * polarity, allowed * 'r) mode -> 'a
+  val zap_to_floor : ('a * polarity) obj -> ('a, allowed * 'r) mode -> 'a
 
   (** Pushes the mode variable to the highest constant possible. *)
-  val zap_to_ceil :
-    ('a * polarity) obj -> ('a * polarity, 'l * allowed) mode -> 'a
+  val zap_to_ceil : ('a * polarity) obj -> ('a, 'l * allowed) mode -> 'a
 
   (** Create a new mode variable of the full range. *)
-  val newvar : ('a * polarity) obj -> ('a * polarity, 'l * 'r) mode
+  val newvar : ('a * polarity) obj -> ('a, 'l * 'r) mode
 
   (** Try to constrain the first mode below the second mode. *)
   val submode :
     ('a * polarity) obj ->
-    ('a * polarity, allowed * 'r) mode ->
-    ('a * polarity, 'l * allowed) mode ->
+    ('a, allowed * 'r) mode ->
+    ('a, 'l * allowed) mode ->
     (unit, 'a error) result
 
   (** Creates a new mode variable above the given mode and returns [true]. In
         the speical case where the given mode is top, returns the constant top
         and [false]. *)
   val newvar_above :
-    ('a * polarity) obj ->
-    ('a * polarity, allowed * 'r_) mode ->
-    ('a * polarity, 'l * 'r) mode * bool
+    ('a * polarity) obj -> ('a, allowed * 'r_) mode -> ('a, 'l * 'r) mode * bool
 
   (** Creates a new mode variable below the given mode and returns [true]. In
         the speical case where the given mode is bottom, returns the constant
         bottom and [false]. *)
   val newvar_below :
-    ('a * polarity) obj ->
-    ('a * polarity, 'l_ * allowed) mode ->
-    ('a * polarity, 'l * 'r) mode * bool
+    ('a * polarity) obj -> ('a, 'l_ * allowed) mode -> ('a, 'l * 'r) mode * bool
 
   (** Returns the join of the list of modes. *)
   val join :
-    ('a * polarity) obj ->
-    ('a * polarity, allowed * 'r) mode list ->
-    ('a * polarity, left_only) mode
+    ('a * polarity) obj -> ('a, allowed * 'r) mode list -> ('a, left_only) mode
 
   (** Return the meet of the list of modes. *)
   val meet :
-    ('a * polarity) obj ->
-    ('a * polarity, 'l * allowed) mode list ->
-    ('a * polarity, right_only) mode
+    ('a * polarity) obj -> ('a, 'l * allowed) mode list -> ('a, right_only) mode
 
   (** Checks if a mode has been constrained sufficiently to a constant.
         Expensive. *)
-  val check_const :
-    ('a * polarity) obj -> ('a * polarity, 'l * 'r) mode -> 'a option
+  val check_const : ('a * polarity) obj -> ('a, 'l * 'r) mode -> 'a option
 
   (** Print a mode. Calls [check_const] for cleaner printing and thus
     expensive.  *)
@@ -214,7 +203,7 @@ module type Polarity_ops = sig
     ?verbose:bool ->
     ('a * polarity) obj ->
     Format.formatter ->
-    ('a * polarity, 'l * 'r) mode ->
+    ('a, 'l * 'r) mode ->
     unit
 
   (** Print a mode without calling [check_const]. *)
@@ -222,7 +211,7 @@ module type Polarity_ops = sig
     ?verbose:bool ->
     ('a * polarity) obj ->
     Format.formatter ->
-    ('a * polarity, 'l * 'r) mode ->
+    ('a, 'l * 'r) mode ->
     unit
 end
 
@@ -273,28 +262,28 @@ module type S = sig
     val apply_pos_pos :
       ('b * positive) obj ->
       ('a, 'b, 'l * 'r) C.morph ->
-      ('a * positive, 'l * 'r) Positive.mode ->
-      ('b * positive, 'l * 'r) Positive.mode
+      ('a, 'l * 'r) Positive.mode ->
+      ('b, 'l * 'r) Positive.mode
 
     (** The antitone morphism from a positive lattice to a negative lattice *)
     val apply_pos_neg :
       ('b * negative) obj ->
       ('a, 'b, 'l * 'r) C.morph ->
-      ('a * positive, 'l * 'r) Positive.mode ->
-      ('b * negative, 'r * 'l) Negative.mode
+      ('a, 'l * 'r) Positive.mode ->
+      ('b, 'r * 'l) Negative.mode
 
     (** The antitone morphism from a negative lattice to a positive lattice *)
     val apply_neg_pos :
       ('b * positive) obj ->
       ('a, 'b, 'l * 'r) C.morph ->
-      ('a * negative, 'r * 'l) Negative.mode ->
-      ('b * positive, 'l * 'r) Positive.mode
+      ('a, 'r * 'l) Negative.mode ->
+      ('b, 'l * 'r) Positive.mode
 
     (** The monotone morphism from a negative lattice to a negative lattice *)
     val apply_neg_neg :
       ('b * negative) obj ->
       ('a, 'b, 'l * 'r) C.morph ->
-      ('a * negative, 'r * 'l) Negative.mode ->
-      ('b * negative, 'r * 'l) Negative.mode
+      ('a, 'r * 'l) Negative.mode ->
+      ('b, 'r * 'l) Negative.mode
   end
 end

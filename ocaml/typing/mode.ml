@@ -776,7 +776,7 @@ let equate_from_submode submode m0 m1 =
 module Common (Obj : Obj) = struct
   open Obj
 
-  type 'd t = (const * Ops.polarity, 'd) Ops.mode
+  type 'd t = (const, 'd) Ops.mode
 
   type l = (allowed * disallowed) t
 
