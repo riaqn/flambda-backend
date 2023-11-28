@@ -21,18 +21,6 @@ module Magic_allow_disallow (X : Allow_disallow) :
     Obj.magic
 end
 
-[@@@warning "-60"] (* CR reisenberg: remove *)
-
-module Make_unsafe_conversions (From : Misc.T3) (To : Misc.T3) : sig
-  val _lift : ('a, 'b, 'c) From.t -> ('a, 'b, 'c) To.t
-
-  val _lower : ('a, 'b, 'c) To.t -> ('a, 'b, 'c) From.t
-end = struct
-  let _lift : ('a, 'b, 'c) From.t -> ('a, 'b, 'c) To.t = Obj.magic
-
-  let _lower : ('a, 'b, 'c) To.t -> ('a, 'b, 'c) From.t = Obj.magic
-end
-
 (** Error returned by failed [submode a b]. [left] will be the lowest mode [a]
    can be, and [right] will be the highest mode [b] can be. And [left <= right]
    will be false, which is why the submode failed. *)
