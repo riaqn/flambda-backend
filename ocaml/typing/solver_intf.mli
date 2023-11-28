@@ -128,12 +128,6 @@ type 'a pos = 'b * 'c constraint 'a = 'b * 'c
 type 'a neg = 'c * 'b constraint 'a = 'b * 'c
 
 module type Polarity = sig
-  type polarity
-
-  type 'd polarized constraint 'd = 'l * 'r
-end
-
-module type Polarity_ops = sig
   type 'a obj
 
   type ('a, 'b, 'd) morph
@@ -267,21 +261,21 @@ module type S = sig
       | Negative : 'a C.obj -> ('a * negative) obj
           (** the dual lattice of obj *)
 
-    module type Polarity_ops =
-      Polarity_ops
+    module type Polarity =
+      Polarity
         with type 'a obj := 'a obj
          and type ('a, 'b, 'd) morph := ('a, 'b, 'd) C.morph
          and type 'a error := 'a error
 
     module rec Positive :
-      (Polarity_ops
+      (Polarity
         with type polarity = positive
          and type 'd polarized = 'd pos
          and type not_polarity = negative
          and type ('a, 'd) not_mode = ('a, 'd) Negative.mode)
 
     and Negative :
-      (Polarity_ops
+      (Polarity
         with type polarity = negative
          and type 'd polarized = 'd neg
          and type not_polarity = positive

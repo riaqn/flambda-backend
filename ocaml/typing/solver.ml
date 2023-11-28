@@ -591,18 +591,6 @@ end
 module Solver_polarized (C : Lattices_mono) = struct
   module S = Solver_mono (C)
 
-  module Pos = struct
-    type polarity = positive
-
-    type 'd polarized = 'd pos
-  end
-
-  module Neg = struct
-    type polarity = negative
-
-    type 'd polarized = 'd neg
-  end
-
   type changes = S.changes
 
   let undo_changes = S.undo_changes
@@ -613,19 +601,21 @@ module Solver_polarized (C : Lattices_mono) = struct
     | Positive : 'a C.obj -> ('a * positive) obj
     | Negative : 'a C.obj -> ('a * negative) obj
 
-  module type Polarity_ops =
-    Polarity_ops
+  module type Polarity =
+    Polarity
       with type 'a obj := 'a obj
        and type ('a, 'b, 'd) morph := ('a, 'b, 'd) C.morph
        and type 'a error := 'a error
 
   module rec Positive :
-    (Polarity_ops
+    (Polarity
       with type polarity = positive
        and type 'd polarized = 'd pos
        and type not_polarity = negative
        and type ('a, 'd) not_mode = ('a, 'd) Negative.mode) = struct
-    include Pos
+    type polarity = positive
+
+    type 'd polarized = 'd pos
 
     type not_polarity = negative
 
@@ -689,12 +679,14 @@ module Solver_polarized (C : Lattices_mono) = struct
   end
 
   and Negative :
-    (Polarity_ops
+    (Polarity
       with type polarity = negative
        and type 'd polarized = 'd neg
        and type not_polarity = positive
        and type ('a, 'd) not_mode = ('a, 'd) Positive.mode) = struct
-    include Neg
+    type polarity = negative
+
+    type 'd polarized = 'd neg
 
     type not_polarity = positive
 
