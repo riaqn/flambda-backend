@@ -9,19 +9,24 @@ type right_only = disallowed * allowed
 type both = allowed * allowed
 
 module type Allow_disallow = sig
-  type ('a, 'b, 'd) t
+  type ('a, 'b, 'd) sided constraint 'd = 'l * 'r
 
   (** Disallows on the right.  *)
-  val disallow_right : ('a, 'b, 'l * 'r) t -> ('a, 'b, 'l * disallowed) t
+  val disallow_right :
+    ('a, 'b, 'l * 'r) sided -> ('a, 'b, 'l * disallowed) sided
 
   (** Disallows a the left.  *)
-  val disallow_left : ('a, 'b, 'l * 'r) t -> ('a, 'b, disallowed * 'r) t
+  val disallow_left : ('a, 'b, 'l * 'r) sided -> ('a, 'b, disallowed * 'r) sided
 
   (** Generalizes a right-hand-side [allowed] to be any allowance.  *)
-  val allow_right : ('a, 'b, 'l * allowed) t -> ('a, 'b, 'l * 'r) t
+  val allow_right : ('a, 'b, 'l * allowed) sided -> ('a, 'b, 'l * 'r) sided
 
   (** Generalizes a left-hand-side [allowed] to be any allowance.  *)
-  val allow_left : ('a, 'b, allowed * 'r) t -> ('a, 'b, 'l * 'r) t
+  val allow_left : ('a, 'b, allowed * 'r) sided -> ('a, 'b, 'l * 'r) sided
+end
+
+module type Allow_disallow_arg = sig
+  type ('a, 'b, 'd) sided constraint 'd = 'l * 'r
 end
 
 (** A collection of lattices, indexed by [obj] *)
@@ -103,7 +108,7 @@ module type Lattices_mono = sig
   val right_adjoint :
     'b obj -> ('a, 'b, allowed * 'r) morph -> ('b, 'a, right_only) morph
 
-  include Allow_disallow with type ('a, 'b, 'd) t := ('a, 'b, 'd) morph
+  include Allow_disallow with type ('a, 'b, 'd) sided = ('a, 'b, 'd) morph
 
   (** Apply morphism on constant *)
   val apply : 'b obj -> ('a, 'b, 'd) morph -> 'a -> 'b
@@ -139,9 +144,9 @@ module type Polarity_ops = sig
 
   (** A mode with carrier type ['a] and left/right status ['d] derived from the
      morphism it contains. See comments for [morph] for the format of ['d] *)
-  type ('a_p, 'd) mode constraint 'a_p = 'a * polarity
+  type ('a_p, 'd) mode constraint 'a_p = 'a * polarity constraint 'd = 'l * 'r
 
-  include Allow_disallow with type ('a, _, 'd) t := ('a * polarity, 'd) mode
+  include Allow_disallow with type ('a, _, 'd) sided = ('a * polarity, 'd) mode
 
   (** Returns the mode representing the given constant. *)
   val of_const : ('a * polarity) obj -> 'a -> ('a * polarity, 'l * 'r) mode
@@ -228,7 +233,7 @@ module type S = sig
     }
 
   module Magic_allow_disallow (X : Allow_disallow) :
-    Allow_disallow with type ('a, 'b, 'd) t := ('a, 'b, 'd) X.t
+    Allow_disallow with type ('a, 'b, 'd) sided = ('a, 'b, 'd) X.sided
 
   (** Solver that supports polarized lattices; needed because some morphisms
       are antitone  *)

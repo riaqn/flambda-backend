@@ -1,19 +1,23 @@
 open Solver_intf
 
 module Magic_allow_disallow (X : Allow_disallow) :
-  Allow_disallow with type ('a, 'b, 'd) t := ('a, 'b, 'd) X.t = struct
+  Allow_disallow with type ('a, 'b, 'd) sided = ('a, 'b, 'd) X.sided = struct
+  type ('a, 'b, 'd) sided = ('a, 'b, 'd) X.sided
+
   let disallow_right :
-      type a b l r. (a, b, l * r) X.t -> (a, b, l * disallowed) X.t =
+      type a b l r. (a, b, l * r) sided -> (a, b, l * disallowed) sided =
     Obj.magic
 
   let disallow_left :
-      type a b l r. (a, b, l * r) X.t -> (a, b, disallowed * r) X.t =
+      type a b l r. (a, b, l * r) sided -> (a, b, disallowed * r) sided =
     Obj.magic
 
-  let allow_right : type a b l r. (a, b, l * allowed) X.t -> (a, b, l * r) X.t =
+  let allow_right :
+      type a b l r. (a, b, l * allowed) sided -> (a, b, l * r) sided =
     Obj.magic
 
-  let allow_left : type a b l r. (a, b, allowed * r) X.t -> (a, b, l * r) X.t =
+  let allow_left :
+      type a b l r. (a, b, allowed * r) sided -> (a, b, l * r) sided =
     Obj.magic
 end
 
@@ -130,7 +134,7 @@ module Solver_mono (C : Lattices_mono) = struct
         mvs
 
   include Magic_allow_disallow (struct
-    type ('a, _, 'd) t = ('a, 'd) mode
+    type ('a, _, 'd) sided = ('a, 'd) mode constraint 'd = 'l * 'r
 
     let rec allow_left : type a l r. (a, allowed * r) mode -> (a, l * r) mode =
       function
@@ -615,10 +619,19 @@ module Solver_polarized (C : Lattices_mono) = struct
   module Positive = struct
     include Pos
 
-    type ('a_p, 'd) mode = ('a, 'd) S.mode constraint 'a_p = 'a * positive
+    type ('a_p, 'd) mode = ('a, 'd) S.mode
+      constraint 'a_p = 'a * positive constraint 'd = 'l * 'r
 
-    include Allow_disallow (struct
-      type ('a, _, 'd) t = ('a * positive, 'd) mode
+    include Magic_allow_disallow (struct
+      type ('a, _, 'd) sided = ('a * positive, 'd) mode
+
+      let disallow_right = S.disallow_right
+
+      let disallow_left = S.disallow_left
+
+      let allow_right = S.allow_right
+
+      let allow_left = S.allow_left
     end)
 
     let newvar = function Positive obj -> S.newvar obj
@@ -663,78 +676,78 @@ module Solver_polarized (C : Lattices_mono) = struct
   module Negative = struct
     include Neg
 
-    type ('a, 'd) mode0 =
-      | Neg : ('a, 'd) S.mode -> ('a * negative, 'd neg) mode0
-    [@@unboxed]
+    type ('a_p, 'd) mode = ('a, 'r * 'l) S.mode
+      constraint 'a_p = 'a * negative constraint 'd = 'l * 'r
 
-    type ('a_p, 'd) mode = ('a_p, 'd) mode0 constraint 'a_p = 'a * negative
+    include Magic_allow_disallow (struct
+      type ('a, _, 'd) sided = ('a * negative, 'd) mode
 
-    include Allow_disallow (struct
-      type ('a, _, 'd) t = ('a * negative, 'd) mode
+      let disallow_right = S.disallow_left
+
+      let disallow_left = S.disallow_right
+
+      let allow_right = S.allow_left
+
+      let allow_left = S.allow_right
     end)
 
     let newvar = function
       | Negative obj ->
         let m = S.newvar obj in
-        Neg m
+        m
 
     let submode = function
       | Negative obj -> (
-        fun (Neg m0) (Neg m1) ->
-          match m0, m1 with m0, m1 -> S.submode obj m1 m0)
+        fun m0 m1 -> match m0, m1 with m0, m1 -> S.submode obj m1 m0)
 
     let join = function
       | Negative obj ->
         fun l ->
-          let l = List.map (fun (Neg m) -> m) l in
-          Neg (S.meet obj l)
+          let l = List.map (fun m -> m) l in
+          S.meet obj l
 
     let meet = function
       | Negative obj ->
         fun l ->
-          let l = List.map (fun (Neg m) -> m) l in
-          Neg (S.join obj l)
+          let l = List.map (fun m -> m) l in
+          S.join obj l
 
-    let of_const = function Negative _ -> fun a -> Neg (S.of_const a)
+    let of_const = function Negative _ -> fun a -> S.of_const a
 
-    let min = function Negative obj -> Neg (S.max obj)
+    let min = function Negative obj -> S.max obj
 
-    let max = function Negative obj -> Neg (S.min obj)
+    let max = function Negative obj -> S.min obj
 
-    let zap_to_floor = function
-      | Negative obj -> fun (Neg m) -> S.zap_to_ceil obj m
+    let zap_to_floor = function Negative obj -> fun m -> S.zap_to_ceil obj m
 
-    let zap_to_ceil = function
-      | Negative obj -> fun (Neg m) -> S.zap_to_floor obj m
+    let zap_to_ceil = function Negative obj -> fun m -> S.zap_to_floor obj m
 
     let newvar_above = function
       | Negative obj ->
-        fun (Neg m) ->
+        fun m ->
           let m, b = S.newvar_below obj m in
-          Neg m, b
+          m, b
 
     let newvar_below = function
       | Negative obj ->
-        fun (Neg m) ->
+        fun m ->
           let m, b = S.newvar_above obj m in
-          Neg m, b
+          m, b
 
-    let check_const = function
-      | Negative obj -> fun (Neg m) -> S.check_const obj m
+    let check_const = function Negative obj -> fun m -> S.check_const obj m
 
-    let print ?(verbose = false) obj ppf (Neg m) =
+    let print ?(verbose = false) obj ppf m =
       match obj with Negative obj -> S.print ~verbose obj ppf m
 
-    let print_raw ?(verbose = false) obj ppf (Neg m) =
+    let print_raw ?(verbose = false) obj ppf m =
       match obj with Negative obj -> S.print_raw ~verbose obj ppf m
   end
 
   let apply_pos_pos (Positive dst : _ obj) f m = S.apply dst f m
 
-  let apply_neg_pos (Positive dst : _ obj) f (Negative.Neg m) = S.apply dst f m
+  let apply_neg_pos (Positive dst : _ obj) f m = S.apply dst f m
 
-  let apply_pos_neg (Negative dst : _ obj) f m = Negative.Neg (S.apply dst f m)
+  let apply_pos_neg (Negative dst : _ obj) f m = S.apply dst f m
 
-  let apply_neg_neg (Negative dst : _ obj) f (Negative.Neg m) =
-    Negative.Neg (S.apply dst f m)
+  let apply_neg_neg (Negative dst : _ obj) f m = S.apply dst f m
 end

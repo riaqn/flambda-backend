@@ -653,7 +653,7 @@ module Lattices_mono = struct
       Set (Product.flip sax, f')
 
   include Magic_allow_disallow (struct
-    type ('a, 'b, 'd) t = ('a, 'b, 'd) morph
+    type ('a, 'b, 'd) sided = ('a, 'b, 'd) morph constraint 'd = 'l * 'r
 
     let rec allow_left :
         type a b l r. (a, b, allowed * r) morph -> (a, b, l * r) morph =
@@ -787,6 +787,8 @@ module Common (Obj : Obj) = struct
   type nonrec error = const error
 
   type equate_error = equate_step * error
+
+  type (_, _, 'd) sided = 'd t
 
   let disallow_right m = Ops.disallow_right m
 
@@ -1171,7 +1173,7 @@ module Value = struct
     }
 
   include Magic_allow_disallow (struct
-    type nonrec (_, _, 'd) t = 'd t
+    type (_, _, 'd) sided = 'd t constraint 'd = 'l * 'r
 
     let allow_left { monadic; comonadic } =
       let monadic = Monadic.allow_left monadic in
@@ -1411,7 +1413,7 @@ module Alloc = struct
   let max = { comonadic = Comonadic.min; monadic = Monadic.max }
 
   include Magic_allow_disallow (struct
-    type nonrec (_, _, 'd) t = 'd t
+    type (_, _, 'd) sided = 'd t constraint 'd = 'l * 'r
 
     let allow_left { monadic; comonadic } =
       let monadic = Monadic.allow_left monadic in
