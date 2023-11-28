@@ -131,11 +131,17 @@ end
 module type Polarity_ops = sig
   type 'a obj
 
-  type ('a, 'd) mode
-
   type 'a error
 
   type polarity
+
+  type 'd polarized constraint 'd = 'l * 'r
+
+  (** A mode with carrier type ['a] and left/right status ['d] derived from the
+     morphism it contains. See comments for [morph] for the format of ['d] *)
+  type ('a_p, 'd) mode constraint 'a_p = 'a * polarity
+
+  include Allow_disallow with type ('a, _, 'd) t := ('a * polarity, 'd) mode
 
   (** Returns the mode representing the given constant. *)
   val of_const : ('a * polarity) obj -> 'a -> ('a * polarity, 'l * 'r) mode
@@ -249,48 +255,35 @@ module type S = sig
       | Negative : 'a C.obj -> ('a * negative) obj
           (** the dual lattice of obj *)
 
-    (* A mode with carrier type ['a] and left/right status ['d] derived from the
-       morphism it contains. See comments for [morph] for the format of ['d] *)
-    type ('a, 'd) mode
+    module type Polarity_ops =
+      Polarity_ops with type 'a obj := 'a obj and type 'a error := 'a error
 
-    include Allow_disallow with type ('a, _, 'd) t := ('a, 'd) mode
+    module Positive :
+      Polarity_ops with type polarity = positive and type 'd polarized = 'd pos
 
-    module Pos :
-      Polarity with type polarity = positive and type 'd polarized = 'd pos
-
-    module Neg :
-      Polarity with type polarity = negative and type 'd polarized = 'd neg
+    module Negative :
+      Polarity_ops with type polarity = negative and type 'd polarized = 'd neg
 
     (* This is just needed to generate the types for the [apply_*] functions;
        do not use. *)
-    module Apply (From : Polarity) (To : Polarity) : sig
+    module Apply (From : Polarity_ops) (To : Polarity_ops) : sig
       type ('a, 'b, 'd) apply =
         ('b * To.polarity) obj ->
         ('a, 'b, 'd) C.morph ->
-        ('a * From.polarity, 'd From.polarized) mode ->
-        ('b * To.polarity, 'd To.polarized) mode
+        ('a * From.polarity, 'd From.polarized) From.mode ->
+        ('b * To.polarity, 'd To.polarized) To.mode
     end
 
     (** The monotone morphism from a positive lattice to a positive lattice *)
-    val apply_pos_pos : ('a, 'b, 'd) Apply(Pos)(Pos).apply
+    val apply_pos_pos : ('a, 'b, 'd) Apply(Positive)(Positive).apply
 
     (** The antitone morphism from a positive lattice to a negative lattice *)
-    val apply_pos_neg : ('a, 'b, 'd) Apply(Pos)(Neg).apply
+    val apply_pos_neg : ('a, 'b, 'd) Apply(Positive)(Negative).apply
 
     (** The antitone morphism from a negative lattice to a positive lattice *)
-    val apply_neg_pos : ('a, 'b, 'd) Apply(Neg)(Pos).apply
+    val apply_neg_pos : ('a, 'b, 'd) Apply(Negative)(Positive).apply
 
     (** The monotone morphism from a negative lattice to a negative lattice *)
-    val apply_neg_neg : ('a, 'b, 'd) Apply(Neg)(Neg).apply
-
-    module type Polarity_ops =
-      Polarity_ops
-        with type 'a obj := 'a obj
-         and type ('a, 'd) mode := ('a, 'd) mode
-         and type 'a error := 'a error
-
-    module Positive_ops : Polarity_ops with type polarity = positive
-
-    module Negative_ops : Polarity_ops with type polarity = negative
+    val apply_neg_neg : ('a, 'b, 'd) Apply(Negative)(Negative).apply
   end
 end

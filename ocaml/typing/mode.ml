@@ -776,7 +776,7 @@ let equate_from_submode submode m0 m1 =
 module Common (Obj : Obj) = struct
   open Obj
 
-  type 'd t = (const * Ops.polarity, 'd) S.mode
+  type 'd t = (const * Ops.polarity, 'd) Ops.mode
 
   type l = (allowed * disallowed) t
 
@@ -788,13 +788,13 @@ module Common (Obj : Obj) = struct
 
   type equate_error = equate_step * error
 
-  let disallow_right m = S.disallow_right m
+  let disallow_right m = Ops.disallow_right m
 
-  let disallow_left m = S.disallow_left m
+  let disallow_left m = Ops.disallow_left m
 
-  let allow_left m = S.allow_left m
+  let allow_left m = Ops.allow_left m
 
-  let allow_right m = S.allow_right m
+  let allow_right m = Ops.allow_right m
 
   let newvar () = Ops.newvar obj_s
 
@@ -838,7 +838,7 @@ module Locality = struct
   module Obj = struct
     type const = Const.t
 
-    module Ops = S.Positive_ops
+    module Ops = S.Positive
 
     let obj = C.Locality
 
@@ -862,7 +862,7 @@ module Regionality = struct
   module Obj = struct
     type const = Const.t
 
-    module Ops = S.Positive_ops
+    module Ops = S.Positive
 
     let obj_s : (const * Ops.polarity) S.obj = S.Positive C.Regionality
   end
@@ -886,7 +886,7 @@ module Linearity = struct
   module Obj = struct
     type const = Const.t
 
-    module Ops = S.Positive_ops
+    module Ops = S.Positive
 
     let obj = C.Linearity
 
@@ -911,7 +911,7 @@ module Uniqueness = struct
     type const = Const.t
 
     (* the negation of Uniqueness_op gives us the proper uniqueness *)
-    module Ops = S.Negative_ops
+    module Ops = S.Negative
 
     let obj = C.Uniqueness_op
 
@@ -954,7 +954,7 @@ module Comonadic_with_regionality = struct
   module Obj = struct
     type const = Const.t
 
-    module Ops = S.Positive_ops
+    module Ops = S.Positive
 
     let obj : const C.obj = C.Comonadic_with_regionality
 
@@ -973,39 +973,39 @@ module Comonadic_with_regionality = struct
     S.apply_pos_pos Regionality.Obj.obj_s (C.Proj (Obj.obj, Axis0)) m
 
   let min_with_regionality m =
-    S.apply_pos_pos Obj.obj_s (C.Min_with Axis0) (S.disallow_right m)
+    S.apply_pos_pos Obj.obj_s (C.Min_with Axis0) (S.Positive.disallow_right m)
 
   let max_with_regionality m =
-    S.apply_pos_pos Obj.obj_s (C.Max_with Axis0) (S.disallow_left m)
+    S.apply_pos_pos Obj.obj_s (C.Max_with Axis0) (S.Positive.disallow_left m)
 
   let set_regionality_max m =
     S.apply_pos_pos Obj.obj_s
       (C.Set (Product.SAxis0, C.Const_max Regionality))
-      (S.disallow_left m)
+      (S.Positive.disallow_left m)
 
   let set_regionality_min m =
     S.apply_pos_pos Obj.obj_s
       (C.Set (Product.SAxis0, C.Const_min Regionality))
-      (S.disallow_right m)
+      (S.Positive.disallow_right m)
 
   let linearity m =
     S.apply_pos_pos Linearity.Obj.obj_s (C.Proj (Obj.obj, Axis1)) m
 
   let min_with_linearity m =
-    S.apply_pos_pos Obj.obj_s (C.Min_with Axis1) (S.disallow_right m)
+    S.apply_pos_pos Obj.obj_s (C.Min_with Axis1) (S.Positive.disallow_right m)
 
   let max_with_linearity m =
-    S.apply_pos_pos Obj.obj_s (C.Max_with Axis1) (S.disallow_left m)
+    S.apply_pos_pos Obj.obj_s (C.Max_with Axis1) (S.Positive.disallow_left m)
 
   let set_linearity_max m =
     S.apply_pos_pos Obj.obj_s
       (C.Set (Product.SAxis1, C.Const_max Linearity))
-      (S.disallow_left m)
+      (S.Positive.disallow_left m)
 
   let set_linearity_min m =
     S.apply_pos_pos Obj.obj_s
       (C.Set (Product.SAxis1, C.Const_min Linearity))
-      (S.disallow_right m)
+      (S.Positive.disallow_right m)
 
   let zap_to_legacy = zap_to_floor
 
@@ -1041,7 +1041,7 @@ module Comonadic_with_locality = struct
   module Obj = struct
     type const = Const.t
 
-    module Ops = S.Positive_ops
+    module Ops = S.Positive
 
     let obj : const C.obj = C.Comonadic_with_locality
 
@@ -1060,39 +1060,39 @@ module Comonadic_with_locality = struct
     S.apply_pos_pos Locality.Obj.obj_s (C.Proj (Obj.obj, Axis0)) m
 
   let min_with_locality m =
-    S.apply_pos_pos Obj.obj_s (C.Min_with Axis0) (S.disallow_right m)
+    S.apply_pos_pos Obj.obj_s (C.Min_with Axis0) (S.Positive.disallow_right m)
 
   let max_with_locality m =
-    S.apply_pos_pos Obj.obj_s (C.Max_with Axis0) (S.disallow_left m)
+    S.apply_pos_pos Obj.obj_s (C.Max_with Axis0) (S.Positive.disallow_left m)
 
   let set_locality_max m =
     S.apply_pos_pos Obj.obj_s
       (C.Set (Product.SAxis0, C.Const_max Locality))
-      (S.disallow_left m)
+      (S.Positive.disallow_left m)
 
   let set_locality_min m =
     S.apply_pos_pos Obj.obj_s
       (C.Set (Product.SAxis0, C.Const_min Locality))
-      (S.disallow_right m)
+      (S.Positive.disallow_right m)
 
   let linearity m =
     S.apply_pos_pos Linearity.Obj.obj_s (C.Proj (Obj.obj, Axis1)) m
 
   let min_with_linearity m =
-    S.apply_pos_pos Obj.obj_s (C.Min_with Axis1) (S.disallow_right m)
+    S.apply_pos_pos Obj.obj_s (C.Min_with Axis1) (S.Positive.disallow_right m)
 
   let max_with_linearity m =
-    S.apply_pos_pos Obj.obj_s (C.Max_with Axis1) (S.disallow_left m)
+    S.apply_pos_pos Obj.obj_s (C.Max_with Axis1) (S.Positive.disallow_left m)
 
   let set_linearity_max m =
     S.apply_pos_pos Obj.obj_s
       (C.Set (Product.SAxis1, C.Const_max Linearity))
-      (S.disallow_left m)
+      (S.Positive.disallow_left m)
 
   let set_linearity_min m =
     S.apply_pos_pos Obj.obj_s
       (C.Set (Product.SAxis1, C.Const_min Linearity))
-      (S.disallow_right m)
+      (S.Positive.disallow_right m)
 
   let zap_to_legacy = zap_to_floor
 
@@ -1130,13 +1130,15 @@ module Monadic = struct
 
   type equate_error = equate_step * error
 
-  let max_with_uniqueness m = S.disallow_left m
+  let max_with_uniqueness m = S.Negative.disallow_left m
 
-  let min_with_uniqueness m = S.disallow_right m
+  let min_with_uniqueness m = S.Negative.disallow_right m
 
-  let set_uniqueness_max _ = Uniqueness.max |> S.disallow_left |> S.allow_right
+  let set_uniqueness_max _ =
+    Uniqueness.max |> S.Negative.disallow_left |> S.Negative.allow_right
 
-  let set_uniqueness_min _ = Uniqueness.min |> S.disallow_right |> S.allow_left
+  let set_uniqueness_min _ =
+    Uniqueness.min |> S.Negative.disallow_right |> S.Negative.allow_left
 
   let submode m0 m1 =
     match submode m0 m1 with Ok () -> Ok () | Error e -> Error (`Uniqueness e)
