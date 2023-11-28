@@ -136,8 +136,6 @@ module type Polarity = sig
 
   type polarity
 
-  type not_polarity
-
   type ('a, 'd) not_mode constraint 'd = 'l * 'r
 
   type 'a not_obj
@@ -261,7 +259,6 @@ module type S = sig
       (Polarity
         with type polarity = positive
          and type 'd polarized = 'd pos
-         and type not_polarity = negative
          and type ('a, 'd) not_mode = ('a, 'd) Negative.mode
          and type 'a not_obj = 'a Negative.obj)
 
@@ -269,7 +266,6 @@ module type S = sig
       (Polarity
         with type polarity = negative
          and type 'd polarized = 'd neg
-         and type not_polarity = positive
          and type ('a, 'd) not_mode = ('a, 'd) Positive.mode
          and type 'a not_obj = 'a Positive.obj)
   end
