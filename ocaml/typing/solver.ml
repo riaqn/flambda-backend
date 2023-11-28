@@ -597,14 +597,10 @@ module Solver_polarized (C : Lattices_mono) = struct
 
   let append_changes = S.append_changes
 
-  type 'a obj =
-    | Positive : 'a C.obj -> ('a * positive) obj
-    | Negative : 'a C.obj -> ('a * negative) obj
-
   module type Polarity =
     Polarity
-      with type 'a obj := 'a obj
-       and type ('a, 'b, 'd) morph := ('a, 'b, 'd) C.morph
+      with type ('a, 'b, 'd) morph := ('a, 'b, 'd) C.morph
+       and type 'a c_obj := 'a C.obj
        and type 'a error := 'a error
 
   module rec Positive :
@@ -612,7 +608,8 @@ module Solver_polarized (C : Lattices_mono) = struct
       with type polarity = positive
        and type 'd polarized = 'd pos
        and type not_polarity = negative
-       and type ('a, 'd) not_mode = ('a, 'd) Negative.mode) = struct
+       and type ('a, 'd) not_mode = ('a, 'd) Negative.mode
+       and type 'a not_obj = 'a Negative.obj) = struct
     type polarity = positive
 
     type 'd polarized = 'd pos
@@ -620,6 +617,14 @@ module Solver_polarized (C : Lattices_mono) = struct
     type not_polarity = negative
 
     type ('a, 'd) not_mode = ('a, 'd) Negative.mode
+
+    type 'a not_obj = 'a Negative.obj
+
+    type 'a obj = Positive of 'a C.obj [@@unboxed]
+
+    let lift_obj o = Positive o
+
+    let lower_obj (Positive o) = o
 
     type ('a, 'd) mode = ('a, 'd) S.mode constraint 'd = 'l * 'r
 
@@ -675,7 +680,7 @@ module Solver_polarized (C : Lattices_mono) = struct
 
     let apply_monotone (Positive dst) f m = S.apply dst f m
 
-    let apply_antitone (Negative dst) f m = S.apply dst f m
+    let apply_antitone dst f m = S.apply (Negative.lower_obj dst) f m
   end
 
   and Negative :
@@ -683,7 +688,8 @@ module Solver_polarized (C : Lattices_mono) = struct
       with type polarity = negative
        and type 'd polarized = 'd neg
        and type not_polarity = positive
-       and type ('a, 'd) not_mode = ('a, 'd) Positive.mode) = struct
+       and type ('a, 'd) not_mode = ('a, 'd) Positive.mode
+       and type 'a not_obj = 'a Positive.obj) = struct
     type polarity = negative
 
     type 'd polarized = 'd neg
@@ -691,6 +697,14 @@ module Solver_polarized (C : Lattices_mono) = struct
     type not_polarity = positive
 
     type ('a, 'd) not_mode = ('a, 'd) Positive.mode
+
+    type 'a not_obj = 'a Positive.obj
+
+    type 'a obj = Negative of 'a C.obj [@@unboxed]
+
+    let lift_obj o = Negative o
+
+    let lower_obj (Negative o) = o
 
     type ('a, 'd) mode = ('a, 'r * 'l) S.mode constraint 'd = 'l * 'r
 
@@ -759,6 +773,6 @@ module Solver_polarized (C : Lattices_mono) = struct
 
     let apply_monotone (Negative dst) f m = S.apply dst f m
 
-    let apply_antitone (Positive dst) f m = S.apply dst f m
+    let apply_antitone dst f m = S.apply (Positive.lower_obj dst) f m
   end
 end

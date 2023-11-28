@@ -762,7 +762,7 @@ module type Obj = sig
 
   module Polarity : S.Polarity
 
-  val obj_s : (const * Polarity.polarity) S.obj
+  val obj_s : const Polarity.obj
 end
 
 let equate_from_submode submode m0 m1 =
@@ -845,7 +845,7 @@ module Locality = struct
 
     let obj = C.Locality
 
-    let obj_s : (const * Polarity.polarity) S.obj = S.Positive obj
+    let obj_s : const Polarity.obj = Polarity.lift_obj obj
   end
 
   include Common (Obj)
@@ -867,7 +867,7 @@ module Regionality = struct
 
     module Polarity = S.Positive
 
-    let obj_s : (const * Polarity.polarity) S.obj = S.Positive C.Regionality
+    let obj_s : const Polarity.obj = Polarity.lift_obj C.Regionality
   end
 
   include Common (Obj)
@@ -893,7 +893,7 @@ module Linearity = struct
 
     let obj = C.Linearity
 
-    let obj_s : (const * Polarity.polarity) S.obj = S.Positive obj
+    let obj_s : const Polarity.obj = Polarity.lift_obj obj
   end
 
   include Common (Obj)
@@ -918,7 +918,7 @@ module Uniqueness = struct
 
     let obj = C.Uniqueness_op
 
-    let obj_s : (const * Polarity.polarity) S.obj = S.Negative obj
+    let obj_s : const Polarity.obj = Polarity.lift_obj obj
   end
 
   include Common (Obj)
@@ -961,7 +961,7 @@ module Comonadic_with_regionality = struct
 
     let obj : const C.obj = C.Comonadic_with_regionality
 
-    let obj_s : (const * Polarity.polarity) S.obj = S.Positive obj
+    let obj_s : const Polarity.obj = Polarity.lift_obj obj
   end
 
   include Common (Obj)
@@ -1052,7 +1052,7 @@ module Comonadic_with_locality = struct
 
     let obj : const C.obj = C.Comonadic_with_locality
 
-    let obj_s : (const * Polarity.polarity) S.obj = S.Positive obj
+    let obj_s : const Polarity.obj = Polarity.lift_obj obj
   end
 
   include Common (Obj)
