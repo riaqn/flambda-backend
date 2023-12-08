@@ -714,8 +714,35 @@ module Solver_polarized (C : Lattices_mono) = struct
 
     let print_raw ?(verbose = false) = S.print_raw ~verbose
 
-    let apply_monotone dst f m = S.apply dst f m
+    let apply_monotone = S.apply
 
     let apply_antitone dst f m = S.apply (Positive.lower_obj dst) f m
+  end
+
+  (* Definitions to show that this solver works over a category. *)
+  module Category = struct
+    type 'a obj =
+      | Positive of 'a Positive.obj
+      | Negative of 'a Negative.obj
+
+    type ('a, 'b, 'd) morph = ('a, 'b, 'd) C.morph
+
+    type ('a, 'd) mode =
+      | Positive of ('a, 'd pos) Positive.mode
+      | Negative of ('a, 'd neg) Negative.mode
+
+    let apply :
+        type a b l r.
+        b obj -> (a, b, l * r) morph -> (a, l * r) mode -> (b, l * r) mode =
+     fun obj morph mode ->
+      match obj, mode with
+      | Positive obj, Positive mode ->
+        Positive (Positive.apply_monotone obj morph mode)
+      | Positive obj, Negative mode ->
+        Positive (Negative.apply_antitone obj morph mode)
+      | Negative obj, Positive mode ->
+        Negative (Positive.apply_antitone obj morph mode)
+      | Negative obj, Negative mode ->
+        Negative (Negative.apply_monotone obj morph mode)
   end
 end

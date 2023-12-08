@@ -291,5 +291,23 @@ module type S = sig
         with type 'd polarized = 'd neg
          and type ('a, 'd) not_mode = ('a, 'd) Positive.mode
          and type 'a not_obj = 'a Positive.obj)
+
+    (* The following definitions show how this solver works over a category by
+       defining objects and morphisms. These definitions are not used in
+       practice. They are put into a module to make it easy to spot if we end up
+       using these in the future. *)
+    module Category : sig
+      type 'a obj =
+        | Positive of 'a Positive.obj
+        | Negative of 'a Negative.obj
+
+      type ('a, 'b, 'd) morph = ('a, 'b, 'd) C.morph
+
+      type ('a, 'd) mode =
+        | Positive of ('a, 'd pos) Positive.mode
+        | Negative of ('a, 'd neg) Negative.mode
+
+      val apply : 'b obj -> ('a, 'b, 'd) morph -> ('a, 'd) mode -> ('b, 'd) mode
+    end
   end
 end
