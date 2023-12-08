@@ -593,12 +593,9 @@ module Solver_polarized (C : Lattices_mono) = struct
 
   module rec Positive :
     (Polarity
-      with type polarity = positive
-       and type 'd polarized = 'd pos
+      with type 'd polarized = 'd pos
        and type ('a, 'd) not_mode = ('a, 'd) Negative.mode
        and type 'a not_obj = 'a Negative.obj) = struct
-    type polarity = positive
-
     type 'd polarized = 'd pos
 
     type ('a, 'd) not_mode = ('a, 'd) Negative.mode
@@ -660,12 +657,9 @@ module Solver_polarized (C : Lattices_mono) = struct
 
   and Negative :
     (Polarity
-      with type polarity = negative
-       and type 'd polarized = 'd neg
+      with type 'd polarized = 'd neg
        and type ('a, 'd) not_mode = ('a, 'd) Positive.mode
        and type 'a not_obj = 'a Positive.obj) = struct
-    type polarity = negative
-
     type 'd polarized = 'd neg
 
     type ('a, 'd) not_mode = ('a, 'd) Positive.mode

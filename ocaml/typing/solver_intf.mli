@@ -119,38 +119,53 @@ module type Lattices_mono = sig
   val print_morph : 'b obj -> Format.formatter -> ('a, 'b, 'd) morph -> unit
 end
 
-type positive = private Positive
-
-type negative = private Negative
-
 type 'a pos = 'b * 'c constraint 'a = 'b * 'c
 
 type 'a neg = 'c * 'b constraint 'a = 'b * 'c
 
 module type Polarity = sig
+  (* These first few types will be replaced with types from
+     the Lattices_mono *)
+
+  (** The morphism type from the [Lattices_mono] we're working with *)
   type ('a, 'b, 'd) morph
 
   type 'a error
 
+  (** The object type from the [Lattices] we're working with. This is
+      the non-polarized object type, shared between positive and negative
+      lattices. *)
   type 'a c_obj
 
-  type polarity
-
-  type ('a, 'd) not_mode constraint 'd = 'l * 'r
-
-  type 'a not_obj
-
+  (** For a negative lattice, we reverse the direction of adjoints. We thus use
+      [neg] for [polarized] for negative lattices, which reverses ['l * 'r] to
+      ['r * 'l]. (Use [pos] for positive lattices.) *)
   type 'd polarized constraint 'd = 'l * 'r
 
+  (** The object type for positive lattices and that for negative lattices are
+      distinct, so we avoid getting the two confused. Internal to the module
+      definition, this will just be the same as [c_obj]. *)
   type 'a obj
 
+  (** Convert an unpolarized object descriptor into a polarized one. Nothing
+      stops you from getting the polarity wrong in this function, so be very
+      careful when using it: lift only positive lattices into a positive
+      [Polarity] and negative ones into a negative [Polarity]. *)
   val lift_obj : 'a c_obj -> 'a obj
 
+  (** Get the unpolarized object descriptor from a polarized one. Unlike
+      [lift_obj], this is always safe to do. *)
   val lower_obj : 'a obj -> 'a c_obj
 
   (** A mode with carrier type ['a] and left/right status ['d] derived from the
      morphism it contains. See comments for [morph] for the format of ['d] *)
   type ('a, 'd) mode constraint 'd = 'l * 'r
+
+  (** The object type for the opposite polarity. *)
+  type 'a not_obj
+
+  (** The mode type for the opposite polarity. *)
+  type ('a, 'd) not_mode constraint 'd = 'l * 'r
 
   include Allow_disallow with type ('a, _, 'd) sided = ('a, 'd) mode
 
@@ -210,12 +225,18 @@ module type Polarity = sig
   val print_raw :
     ?verbose:bool -> 'a obj -> Format.formatter -> ('a, 'l * 'r) mode -> unit
 
+  (** Apply a monotone morphism whose source and target modes are of the
+      polarity of this enclosing module. That is, [Positive.apply_monotone]
+      takes a positive mode to a positive mode. *)
   val apply_monotone :
     'b obj ->
     ('a, 'b, ('l * 'r) polarized) morph ->
     ('a, 'l * 'r) mode ->
     ('b, 'l * 'r) mode
 
+  (** Apply an antitone morphism whose source mode is the mode defined in
+      this module and whose target mode is the dual mode. That is,
+      [Positive.apply_antitone] takes a positive mode to a negative one. *)
   val apply_antitone :
     'b not_obj ->
     ('a, 'b, ('l * 'r) polarized) morph ->
@@ -257,15 +278,13 @@ module type S = sig
 
     module rec Positive :
       (Polarity
-        with type polarity = positive
-         and type 'd polarized = 'd pos
+        with type 'd polarized = 'd pos
          and type ('a, 'd) not_mode = ('a, 'd) Negative.mode
          and type 'a not_obj = 'a Negative.obj)
 
     and Negative :
       (Polarity
-        with type polarity = negative
-         and type 'd polarized = 'd neg
+        with type 'd polarized = 'd neg
          and type ('a, 'd) not_mode = ('a, 'd) Positive.mode
          and type 'a not_obj = 'a Positive.obj)
   end
