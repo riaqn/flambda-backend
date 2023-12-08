@@ -119,8 +119,12 @@ module type Lattices_mono = sig
   val print_morph : 'b obj -> Format.formatter -> ('a, 'b, 'd) morph -> unit
 end
 
+(** Arrange the permissions appropriately for a positive lattice, by
+    doing nothing. *)
 type 'a pos = 'b * 'c constraint 'a = 'b * 'c
 
+(** Arrange the permissions appropriately for a negative lattice, by
+    swapping left and right. *)
 type 'a neg = 'c * 'b constraint 'a = 'b * 'c
 
 module type Polarity = sig
