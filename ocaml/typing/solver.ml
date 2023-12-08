@@ -610,17 +610,7 @@ module Solver_polarized (C : Lattices_mono) = struct
 
     type ('a, 'd) mode = ('a, 'd) S.mode constraint 'd = 'l * 'r
 
-    include Magic_allow_disallow (struct
-      type ('a, _, 'd) sided = ('a, 'd) mode
-
-      let disallow_right = S.disallow_right
-
-      let disallow_left = S.disallow_left
-
-      let allow_right = S.allow_right
-
-      let allow_left = S.allow_left
-    end)
+    include Magic_allow_disallow (S)
 
     let newvar = S.newvar
 
