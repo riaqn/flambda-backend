@@ -760,9 +760,9 @@ let append_changes = S.append_changes
 module type Obj = sig
   type const
 
-  module Polarity : S.Polarity
+  module Solver : S.Solver_polarized
 
-  val obj_s : const Polarity.obj
+  val obj_s : const Solver.obj
 end
 
 let equate_from_submode submode m0 m1 =
@@ -776,7 +776,7 @@ let equate_from_submode submode m0 m1 =
 module Common (Obj : Obj) = struct
   open Obj
 
-  type 'd t = (const, 'd) Polarity.mode
+  type 'd t = (const, 'd) Solver.mode
 
   type l = (allowed * disallowed) t
 
@@ -790,29 +790,29 @@ module Common (Obj : Obj) = struct
 
   type (_, _, 'd) sided = 'd t
 
-  let disallow_right m = Polarity.disallow_right m
+  let disallow_right m = Solver.disallow_right m
 
-  let disallow_left m = Polarity.disallow_left m
+  let disallow_left m = Solver.disallow_left m
 
-  let allow_left m = Polarity.allow_left m
+  let allow_left m = Solver.allow_left m
 
-  let allow_right m = Polarity.allow_right m
+  let allow_right m = Solver.allow_right m
 
-  let newvar () = Polarity.newvar obj_s
+  let newvar () = Solver.newvar obj_s
 
-  let min = Polarity.min obj_s
+  let min = Solver.min obj_s
 
-  let max = Polarity.max obj_s
+  let max = Solver.max obj_s
 
-  let newvar_above m = Polarity.newvar_above obj_s m
+  let newvar_above m = Solver.newvar_above obj_s m
 
-  let newvar_below m = Polarity.newvar_below obj_s m
+  let newvar_below m = Solver.newvar_below obj_s m
 
-  let submode m0 m1 : (unit, error) result = Polarity.submode obj_s m0 m1
+  let submode m0 m1 : (unit, error) result = Solver.submode obj_s m0 m1
 
-  let join l = Polarity.join obj_s l
+  let join l = Solver.join obj_s l
 
-  let meet l = Polarity.meet obj_s l
+  let meet l = Solver.meet obj_s l
 
   let submode_exn m0 m1 = assert (submode m0 m1 |> Result.is_ok)
 
@@ -822,17 +822,16 @@ module Common (Obj : Obj) = struct
 
   let print ?(raw = false) ?verbose () ppf m =
     if raw
-    then Polarity.print_raw ?verbose obj_s ppf m
-    else Polarity.print ?verbose obj_s ppf m
+    then Solver.print_raw ?verbose obj_s ppf m
+    else Solver.print ?verbose obj_s ppf m
 
-  let zap_to_ceil m = Polarity.zap_to_ceil obj_s m
+  let zap_to_ceil m = Solver.zap_to_ceil obj_s m
 
-  let zap_to_floor m = Polarity.zap_to_floor obj_s m
+  let zap_to_floor m = Solver.zap_to_floor obj_s m
 
-  let of_const : type l r. const -> (l * r) t =
-   fun a -> Polarity.of_const obj_s a
+  let of_const : type l r. const -> (l * r) t = fun a -> Solver.of_const obj_s a
 
-  let check_const m = Polarity.check_const obj_s m
+  let check_const m = Solver.check_const obj_s m
 end
 
 module Locality = struct
@@ -841,11 +840,11 @@ module Locality = struct
   module Obj = struct
     type const = Const.t
 
-    module Polarity = S.Positive
+    module Solver = S.Positive
 
     let obj = C.Locality
 
-    let obj_s : const Polarity.obj = Polarity.lift_obj obj
+    let obj_s : const Solver.obj = Solver.lift_obj obj
   end
 
   include Common (Obj)
@@ -865,9 +864,9 @@ module Regionality = struct
   module Obj = struct
     type const = Const.t
 
-    module Polarity = S.Positive
+    module Solver = S.Positive
 
-    let obj_s : const Polarity.obj = Polarity.lift_obj C.Regionality
+    let obj_s : const Solver.obj = Solver.lift_obj C.Regionality
   end
 
   include Common (Obj)
@@ -889,11 +888,11 @@ module Linearity = struct
   module Obj = struct
     type const = Const.t
 
-    module Polarity = S.Positive
+    module Solver = S.Positive
 
     let obj = C.Linearity
 
-    let obj_s : const Polarity.obj = Polarity.lift_obj obj
+    let obj_s : const Solver.obj = Solver.lift_obj obj
   end
 
   include Common (Obj)
@@ -914,11 +913,11 @@ module Uniqueness = struct
     type const = Const.t
 
     (* the negation of Uniqueness_op gives us the proper uniqueness *)
-    module Polarity = S.Negative
+    module Solver = S.Negative
 
     let obj = C.Uniqueness_op
 
-    let obj_s : const Polarity.obj = Polarity.lift_obj obj
+    let obj_s : const Solver.obj = Solver.lift_obj obj
   end
 
   include Common (Obj)
@@ -957,11 +956,11 @@ module Comonadic_with_regionality = struct
   module Obj = struct
     type const = Const.t
 
-    module Polarity = S.Positive
+    module Solver = S.Positive
 
     let obj : const C.obj = C.Comonadic_with_regionality
 
-    let obj_s : const Polarity.obj = Polarity.lift_obj obj
+    let obj_s : const Solver.obj = Solver.lift_obj obj
   end
 
   include Common (Obj)
@@ -1048,11 +1047,11 @@ module Comonadic_with_locality = struct
   module Obj = struct
     type const = Const.t
 
-    module Polarity = S.Positive
+    module Solver = S.Positive
 
     let obj : const C.obj = C.Comonadic_with_locality
 
-    let obj_s : const Polarity.obj = Polarity.lift_obj obj
+    let obj_s : const Solver.obj = Solver.lift_obj obj
   end
 
   include Common (Obj)

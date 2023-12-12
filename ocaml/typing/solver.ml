@@ -585,14 +585,14 @@ module Solver_polarized (C : Lattices_mono) = struct
 
   let append_changes = S.append_changes
 
-  module type Polarity =
-    Polarity
+  module type Solver_polarized =
+    Solver_polarized
       with type ('a, 'b, 'd) morph := ('a, 'b, 'd) C.morph
        and type 'a c_obj := 'a C.obj
        and type 'a error := 'a error
 
   module rec Positive :
-    (Polarity
+    (Solver_polarized
       with type 'd polarized = 'd pos
        and type ('a, 'd) not_mode = ('a, 'd) Negative.mode
        and type 'a not_obj = 'a Negative.obj) = struct
@@ -646,7 +646,7 @@ module Solver_polarized (C : Lattices_mono) = struct
   end
 
   and Negative :
-    (Polarity
+    (Solver_polarized
       with type 'd polarized = 'd neg
        and type ('a, 'd) not_mode = ('a, 'd) Positive.mode
        and type 'a not_obj = 'a Positive.obj) = struct

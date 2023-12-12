@@ -127,7 +127,7 @@ type 'a pos = 'b * 'c constraint 'a = 'b * 'c
     swapping left and right. *)
 type 'a neg = 'c * 'b constraint 'a = 'b * 'c
 
-module type Polarity = sig
+module type Solver_polarized = sig
   (* These first few types will be replaced with types from
      the Lattices_mono *)
 
@@ -274,20 +274,20 @@ module type S = sig
        structure reversed. Morphism are four copies of the morphisms in [C], from
        two copies of objects to two copies of objects. *)
 
-    module type Polarity =
-      Polarity
+    module type Solver_polarized =
+      Solver_polarized
         with type ('a, 'b, 'd) morph := ('a, 'b, 'd) C.morph
          and type 'a c_obj := 'a C.obj
          and type 'a error := 'a error
 
     module rec Positive :
-      (Polarity
+      (Solver_polarized
         with type 'd polarized = 'd pos
          and type ('a, 'd) not_mode = ('a, 'd) Negative.mode
          and type 'a not_obj = 'a Negative.obj)
 
     and Negative :
-      (Polarity
+      (Solver_polarized
         with type 'd polarized = 'd neg
          and type ('a, 'd) not_mode = ('a, 'd) Positive.mode
          and type 'a not_obj = 'a Positive.obj)
