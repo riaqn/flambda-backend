@@ -158,7 +158,8 @@ module type Solver_polarized = sig
   val lift_obj : 'a c_obj -> 'a obj
 
   (** Get the unpolarized object descriptor from a polarized one. Unlike
-      [lift_obj], this is always safe to do. *)
+      [lift_obj] (which could potentially label a lattice with the wrong
+      polarity), this is always safe to do. *)
   val lower_obj : 'a obj -> 'a c_obj
 
   (** A mode with carrier type ['a] and left/right status ['d] derived from the
@@ -166,10 +167,10 @@ module type Solver_polarized = sig
   type ('a, 'd) mode constraint 'd = 'l * 'r
 
   (** The object type for the opposite polarity. *)
-  type 'a not_obj
+  type 'a obj_op
 
   (** The mode type for the opposite polarity. *)
-  type ('a, 'd) not_mode constraint 'd = 'l * 'r
+  type ('a, 'd) mode_op constraint 'd = 'l * 'r
 
   include Allow_disallow with type ('a, _, 'd) sided = ('a, 'd) mode
 
@@ -242,10 +243,10 @@ module type Solver_polarized = sig
       this module and whose target mode is the dual mode. That is,
       [Positive.apply_antitone] takes a positive mode to a negative one. *)
   val apply_antitone :
-    'b not_obj ->
+    'b obj_op ->
     ('a, 'b, ('l * 'r) polarized) morph ->
     ('a, 'l * 'r) mode ->
-    ('b, 'r * 'l) not_mode
+    ('b, 'r * 'l) mode_op
 end
 
 module type S = sig
@@ -283,14 +284,14 @@ module type S = sig
     module rec Positive :
       (Solver_polarized
         with type 'd polarized = 'd pos
-         and type ('a, 'd) not_mode = ('a, 'd) Negative.mode
-         and type 'a not_obj = 'a Negative.obj)
+         and type ('a, 'd) mode_op = ('a, 'd) Negative.mode
+         and type 'a obj_op = 'a Negative.obj)
 
     and Negative :
       (Solver_polarized
         with type 'd polarized = 'd neg
-         and type ('a, 'd) not_mode = ('a, 'd) Positive.mode
-         and type 'a not_obj = 'a Positive.obj)
+         and type ('a, 'd) mode_op = ('a, 'd) Positive.mode
+         and type 'a obj_op = 'a Positive.obj)
 
     (* The following definitions show how this solver works over a category by
        defining objects and morphisms. These definitions are not used in
