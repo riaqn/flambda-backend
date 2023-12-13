@@ -166,9 +166,6 @@ module type Solver_polarized = sig
      morphism it contains. See comments for [morph] for the format of ['d] *)
   type ('a, 'd) mode constraint 'd = 'l * 'r
 
-  (** The object type for the opposite polarity. *)
-  type 'a obj_op
-
   (** The mode type for the opposite polarity. *)
   type ('a, 'd) mode_op constraint 'd = 'l * 'r
 
@@ -233,20 +230,20 @@ module type Solver_polarized = sig
   (** Apply a monotone morphism whose source and target modes are of the
       polarity of this enclosing module. That is, [Positive.apply_monotone]
       takes a positive mode to a positive mode. *)
-  val apply_monotone :
+  val via_monotone :
     'b obj ->
     ('a, 'b, ('l * 'r) polarized) morph ->
     ('a, 'l * 'r) mode ->
     ('b, 'l * 'r) mode
 
-  (** Apply an antitone morphism whose source mode is the mode defined in
-      this module and whose target mode is the dual mode. That is,
-      [Positive.apply_antitone] takes a positive mode to a negative one. *)
-  val apply_antitone :
-    'b obj_op ->
+  (** Apply an antitone morphism whose target mode is the mode defined in
+      this module and whose source mode is the dual mode. That is,
+      [Positive.apply_antitone] takes a negative mode to a positive one. *)
+  val via_antitone :
+    'b obj ->
     ('a, 'b, ('l * 'r) polarized) morph ->
-    ('a, 'l * 'r) mode ->
-    ('b, 'r * 'l) mode_op
+    ('a, 'r * 'l) mode_op ->
+    ('b, 'l * 'r) mode
 end
 
 module type S = sig
@@ -284,14 +281,12 @@ module type S = sig
     module rec Positive :
       (Solver_polarized
         with type 'd polarized = 'd pos
-         and type ('a, 'd) mode_op = ('a, 'd) Negative.mode
-         and type 'a obj_op = 'a Negative.obj)
+         and type ('a, 'd) mode_op = ('a, 'd) Negative.mode)
 
     and Negative :
       (Solver_polarized
         with type 'd polarized = 'd neg
-         and type ('a, 'd) mode_op = ('a, 'd) Positive.mode
-         and type 'a obj_op = 'a Positive.obj)
+         and type ('a, 'd) mode_op = ('a, 'd) Positive.mode)
 
     (* The following definitions show how this solver works over a category by
        defining objects and morphisms. These definitions are not used in

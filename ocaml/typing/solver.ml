@@ -594,13 +594,10 @@ module Solver_polarized (C : Lattices_mono) = struct
   module rec Positive :
     (Solver_polarized
       with type 'd polarized = 'd pos
-       and type ('a, 'd) mode_op = ('a, 'd) Negative.mode
-       and type 'a obj_op = 'a Negative.obj) = struct
+       and type ('a, 'd) mode_op = ('a, 'd) Negative.mode) = struct
     type 'd polarized = 'd pos
 
     type ('a, 'd) mode_op = ('a, 'd) Negative.mode
-
-    type 'a obj_op = 'a Negative.obj
 
     type 'a obj = 'a C.obj
 
@@ -640,21 +637,18 @@ module Solver_polarized (C : Lattices_mono) = struct
 
     let print_raw ?(verbose = false) = S.print_raw ~verbose
 
-    let apply_monotone = S.apply
+    let via_monotone = S.apply
 
-    let apply_antitone dst f m = S.apply (Negative.lower_obj dst) f m
+    let via_antitone = S.apply
   end
 
   and Negative :
     (Solver_polarized
       with type 'd polarized = 'd neg
-       and type ('a, 'd) mode_op = ('a, 'd) Positive.mode
-       and type 'a obj_op = 'a Positive.obj) = struct
+       and type ('a, 'd) mode_op = ('a, 'd) Positive.mode) = struct
     type 'd polarized = 'd neg
 
     type ('a, 'd) mode_op = ('a, 'd) Positive.mode
-
-    type 'a obj_op = 'a Positive.obj
 
     type 'a obj = 'a C.obj
 
@@ -704,9 +698,9 @@ module Solver_polarized (C : Lattices_mono) = struct
 
     let print_raw ?(verbose = false) = S.print_raw ~verbose
 
-    let apply_monotone = S.apply
+    let via_monotone = S.apply
 
-    let apply_antitone dst f m = S.apply (Positive.lower_obj dst) f m
+    let via_antitone = S.apply
   end
 
   (* Definitions to show that this solver works over a category. *)
@@ -727,12 +721,12 @@ module Solver_polarized (C : Lattices_mono) = struct
      fun obj morph mode ->
       match obj, mode with
       | Positive obj, Positive mode ->
-        Positive (Positive.apply_monotone obj morph mode)
+        Positive (Positive.via_monotone obj morph mode)
       | Positive obj, Negative mode ->
-        Positive (Negative.apply_antitone obj morph mode)
+        Positive (Positive.via_antitone obj morph mode)
       | Negative obj, Positive mode ->
-        Negative (Positive.apply_antitone obj morph mode)
+        Negative (Negative.via_antitone obj morph mode)
       | Negative obj, Negative mode ->
-        Negative (Negative.apply_monotone obj morph mode)
+        Negative (Negative.via_monotone obj morph mode)
   end
 end
