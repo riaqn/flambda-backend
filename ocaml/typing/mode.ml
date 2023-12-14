@@ -864,7 +864,7 @@ module Regionality = struct
 
     module Solver = S.Positive
 
-    let obj : const C.obj = C.Regionality
+    let obj = C.Regionality
   end
 
   include Common (Obj)
@@ -952,7 +952,7 @@ module Comonadic_with_regionality = struct
 
     module Solver = S.Positive
 
-    let obj : const C.obj = C.Comonadic_with_regionality
+    let obj = C.Comonadic_with_regionality
   end
 
   include Common (Obj)
@@ -1041,7 +1041,7 @@ module Comonadic_with_locality = struct
 
     module Solver = S.Positive
 
-    let obj : const C.obj = C.Comonadic_with_locality
+    let obj = C.Comonadic_with_locality
   end
 
   include Common (Obj)
