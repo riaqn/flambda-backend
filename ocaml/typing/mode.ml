@@ -748,7 +748,7 @@ module Lattices_mono = struct
 end
 
 module C = Lattices_mono
-module S = Solver_polarized (C)
+module S = Solvers_polarized (C)
 
 type changes = S.changes
 

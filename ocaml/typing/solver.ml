@@ -576,7 +576,7 @@ module Solver_mono (C : Lattices_mono) = struct
       allow_left m', true
 end
 
-module Solver_polarized (C : Lattices_mono) = struct
+module Solvers_polarized (C : Lattices_mono) = struct
   module S = Solver_mono (C)
 
   type changes = S.changes

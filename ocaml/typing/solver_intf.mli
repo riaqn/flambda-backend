@@ -257,7 +257,7 @@ module type S = sig
 
   (** Solver that supports polarized lattices; needed because some morphisms
       are antitone  *)
-  module Solver_polarized (C : Lattices_mono) : sig
+  module Solvers_polarized (C : Lattices_mono) : sig
     (* Backtracking facilities used by [types.ml] *)
 
     type changes
