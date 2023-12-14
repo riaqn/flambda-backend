@@ -588,7 +588,7 @@ module Solvers_polarized (C : Lattices_mono) = struct
   module type Solver_polarized =
     Solver_polarized
       with type ('a, 'b, 'd) morph := ('a, 'b, 'd) C.morph
-       and type 'a c_obj := 'a C.obj
+       and type 'a obj := 'a C.obj
        and type 'a error := 'a error
 
   module rec Positive :
@@ -598,12 +598,6 @@ module Solvers_polarized (C : Lattices_mono) = struct
     type 'd polarized = 'd pos
 
     type ('a, 'd) mode_op = ('a, 'd) Negative.mode
-
-    type 'a obj = 'a C.obj
-
-    let lift_obj o = o
-
-    let lower_obj o = o
 
     type ('a, 'd) mode = ('a, 'd) S.mode constraint 'd = 'l * 'r
 
@@ -649,12 +643,6 @@ module Solvers_polarized (C : Lattices_mono) = struct
     type 'd polarized = 'd neg
 
     type ('a, 'd) mode_op = ('a, 'd) Positive.mode
-
-    type 'a obj = 'a C.obj
-
-    let lift_obj o = o
-
-    let lower_obj o = o
 
     type ('a, 'd) mode = ('a, 'r * 'l) S.mode constraint 'd = 'l * 'r
 
@@ -705,9 +693,7 @@ module Solvers_polarized (C : Lattices_mono) = struct
 
   (* Definitions to show that this solver works over a category. *)
   module Category = struct
-    type 'a obj =
-      | Positive of 'a Positive.obj
-      | Negative of 'a Negative.obj
+    type 'a obj = 'a C.obj
 
     type ('a, 'b, 'd) morph = ('a, 'b, 'd) C.morph
 
@@ -715,18 +701,24 @@ module Solvers_polarized (C : Lattices_mono) = struct
       | Positive of ('a, 'd pos) Positive.mode
       | Negative of ('a, 'd neg) Negative.mode
 
-    let apply :
+    let apply_into_positive :
         type a b l r.
-        b obj -> (a, b, l * r) morph -> (a, l * r) mode -> (b, l * r) mode =
-     fun obj morph mode ->
-      match obj, mode with
-      | Positive obj, Positive mode ->
-        Positive (Positive.via_monotone obj morph mode)
-      | Positive obj, Negative mode ->
-        Positive (Positive.via_antitone obj morph mode)
-      | Negative obj, Positive mode ->
-        Negative (Negative.via_antitone obj morph mode)
-      | Negative obj, Negative mode ->
-        Negative (Negative.via_monotone obj morph mode)
+        b obj ->
+        (a, b, l * r) morph ->
+        (a, l * r) mode ->
+        (b, l * r) Positive.mode =
+     fun obj morph -> function
+      | Positive mode -> Positive.via_monotone obj morph mode
+      | Negative mode -> Positive.via_antitone obj morph mode
+
+    let apply_into_negative :
+        type a b l r.
+        b obj ->
+        (a, b, l * r) morph ->
+        (a, l * r) mode ->
+        (b, r * l) Negative.mode =
+     fun obj morph -> function
+      | Positive mode -> Negative.via_antitone obj morph mode
+      | Negative mode -> Negative.via_monotone obj morph mode
   end
 end

@@ -134,33 +134,15 @@ module type Solver_polarized = sig
   (** The morphism type from the [Lattices_mono] we're working with *)
   type ('a, 'b, 'd) morph
 
-  type 'a error
+  (** The object type from the [Lattices_mono] we're working with *)
+  type 'a obj
 
-  (** The object type from the [Lattices] we're working with. This is
-      the non-polarized object type, shared between positive and negative
-      lattices. *)
-  type 'a c_obj
+  type 'a error
 
   (** For a negative lattice, we reverse the direction of adjoints. We thus use
       [neg] for [polarized] for negative lattices, which reverses ['l * 'r] to
       ['r * 'l]. (Use [pos] for positive lattices.) *)
   type 'd polarized constraint 'd = 'l * 'r
-
-  (** The object type for positive lattices and that for negative lattices are
-      distinct, so we avoid getting the two confused. Internal to the module
-      definition, this will just be the same as [c_obj]. *)
-  type 'a obj
-
-  (** Convert an unpolarized object descriptor into a polarized one. Nothing
-      stops you from getting the polarity wrong in this function, so be very
-      careful when using it: lift only positive lattices into a positive
-      [Polarity] and negative ones into a negative [Polarity]. *)
-  val lift_obj : 'a c_obj -> 'a obj
-
-  (** Get the unpolarized object descriptor from a polarized one. Unlike
-      [lift_obj] (which could potentially label a lattice with the wrong
-      polarity), this is always safe to do. *)
-  val lower_obj : 'a obj -> 'a c_obj
 
   (** A mode with carrier type ['a] and left/right status ['d] derived from the
      morphism it contains. See comments for [morph] for the format of ['d] *)
@@ -275,7 +257,7 @@ module type S = sig
     module type Solver_polarized =
       Solver_polarized
         with type ('a, 'b, 'd) morph := ('a, 'b, 'd) C.morph
-         and type 'a c_obj := 'a C.obj
+         and type 'a obj := 'a C.obj
          and type 'a error := 'a error
 
     module rec Positive :
@@ -293,9 +275,7 @@ module type S = sig
        practice. They are put into a module to make it easy to spot if we end up
        using these in the future. *)
     module Category : sig
-      type 'a obj =
-        | Positive of 'a Positive.obj
-        | Negative of 'a Negative.obj
+      type 'a obj = 'a C.obj
 
       type ('a, 'b, 'd) morph = ('a, 'b, 'd) C.morph
 
@@ -303,7 +283,14 @@ module type S = sig
         | Positive of ('a, 'd pos) Positive.mode
         | Negative of ('a, 'd neg) Negative.mode
 
-      val apply : 'b obj -> ('a, 'b, 'd) morph -> ('a, 'd) mode -> ('b, 'd) mode
+      val apply_into_positive :
+        'b obj -> ('a, 'b, 'd) morph -> ('a, 'd) mode -> ('b, 'd) Positive.mode
+
+      val apply_into_negative :
+        'b obj ->
+        ('a, 'b, 'l * 'r) morph ->
+        ('a, 'l * 'r) mode ->
+        ('b, 'r * 'l) Negative.mode
     end
   end
 end

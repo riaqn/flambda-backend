@@ -762,7 +762,7 @@ module type Obj = sig
 
   module Solver : S.Solver_polarized
 
-  val obj_s : const Solver.obj
+  val obj : const C.obj
 end
 
 let equate_from_submode submode m0 m1 =
@@ -798,21 +798,21 @@ module Common (Obj : Obj) = struct
 
   let allow_right m = Solver.allow_right m
 
-  let newvar () = Solver.newvar obj_s
+  let newvar () = Solver.newvar obj
 
-  let min = Solver.min obj_s
+  let min = Solver.min obj
 
-  let max = Solver.max obj_s
+  let max = Solver.max obj
 
-  let newvar_above m = Solver.newvar_above obj_s m
+  let newvar_above m = Solver.newvar_above obj m
 
-  let newvar_below m = Solver.newvar_below obj_s m
+  let newvar_below m = Solver.newvar_below obj m
 
-  let submode m0 m1 : (unit, error) result = Solver.submode obj_s m0 m1
+  let submode m0 m1 : (unit, error) result = Solver.submode obj m0 m1
 
-  let join l = Solver.join obj_s l
+  let join l = Solver.join obj l
 
-  let meet l = Solver.meet obj_s l
+  let meet l = Solver.meet obj l
 
   let submode_exn m0 m1 = assert (submode m0 m1 |> Result.is_ok)
 
@@ -822,16 +822,16 @@ module Common (Obj : Obj) = struct
 
   let print ?(raw = false) ?verbose () ppf m =
     if raw
-    then Solver.print_raw ?verbose obj_s ppf m
-    else Solver.print ?verbose obj_s ppf m
+    then Solver.print_raw ?verbose obj ppf m
+    else Solver.print ?verbose obj ppf m
 
-  let zap_to_ceil m = Solver.zap_to_ceil obj_s m
+  let zap_to_ceil m = Solver.zap_to_ceil obj m
 
-  let zap_to_floor m = Solver.zap_to_floor obj_s m
+  let zap_to_floor m = Solver.zap_to_floor obj m
 
-  let of_const : type l r. const -> (l * r) t = fun a -> Solver.of_const obj_s a
+  let of_const : type l r. const -> (l * r) t = fun a -> Solver.of_const obj a
 
-  let check_const m = Solver.check_const obj_s m
+  let check_const m = Solver.check_const obj m
 end
 
 module Locality = struct
@@ -843,8 +843,6 @@ module Locality = struct
     module Solver = S.Positive
 
     let obj = C.Locality
-
-    let obj_s : const Solver.obj = Solver.lift_obj obj
   end
 
   include Common (Obj)
@@ -866,7 +864,7 @@ module Regionality = struct
 
     module Solver = S.Positive
 
-    let obj_s : const Solver.obj = Solver.lift_obj C.Regionality
+    let obj : const C.obj = C.Regionality
   end
 
   include Common (Obj)
@@ -891,8 +889,6 @@ module Linearity = struct
     module Solver = S.Positive
 
     let obj = C.Linearity
-
-    let obj_s : const Solver.obj = Solver.lift_obj obj
   end
 
   include Common (Obj)
@@ -916,8 +912,6 @@ module Uniqueness = struct
     module Solver = S.Negative
 
     let obj = C.Uniqueness_op
-
-    let obj_s : const Solver.obj = Solver.lift_obj obj
   end
 
   include Common (Obj)
@@ -932,19 +926,19 @@ module Uniqueness = struct
 end
 
 let unique_to_linear m =
-  S.Positive.via_antitone Linearity.Obj.obj_s C.Unique_to_linear m
+  S.Positive.via_antitone Linearity.Obj.obj C.Unique_to_linear m
 
 let linear_to_unique m =
-  S.Negative.via_antitone Uniqueness.Obj.obj_s C.Linear_to_unique m
+  S.Negative.via_antitone Uniqueness.Obj.obj C.Linear_to_unique m
 
 let regional_to_local m =
-  S.Positive.via_monotone Locality.Obj.obj_s C.Regional_to_local m
+  S.Positive.via_monotone Locality.Obj.obj C.Regional_to_local m
 
 let locality_as_regionality m =
-  S.Positive.via_monotone Regionality.Obj.obj_s C.Locality_as_regionality m
+  S.Positive.via_monotone Regionality.Obj.obj C.Locality_as_regionality m
 
 let regional_to_global m =
-  S.Positive.via_monotone Locality.Obj.obj_s C.Regional_to_global m
+  S.Positive.via_monotone Locality.Obj.obj C.Regional_to_global m
 
 module Const = struct
   let unique_to_linear a = C.unique_to_linear a
@@ -959,8 +953,6 @@ module Comonadic_with_regionality = struct
     module Solver = S.Positive
 
     let obj : const C.obj = C.Comonadic_with_regionality
-
-    let obj_s : const Solver.obj = Solver.lift_obj obj
   end
 
   include Common (Obj)
@@ -972,44 +964,44 @@ module Comonadic_with_regionality = struct
   type equate_error = equate_step * error
 
   let regionality m =
-    S.Positive.via_monotone Regionality.Obj.obj_s (C.Proj (Obj.obj, Axis0)) m
+    S.Positive.via_monotone Regionality.Obj.obj (C.Proj (Obj.obj, Axis0)) m
 
   let min_with_regionality m =
-    S.Positive.via_monotone Obj.obj_s (C.Min_with Axis0)
+    S.Positive.via_monotone Obj.obj (C.Min_with Axis0)
       (S.Positive.disallow_right m)
 
   let max_with_regionality m =
-    S.Positive.via_monotone Obj.obj_s (C.Max_with Axis0)
+    S.Positive.via_monotone Obj.obj (C.Max_with Axis0)
       (S.Positive.disallow_left m)
 
   let set_regionality_max m =
-    S.Positive.via_monotone Obj.obj_s
+    S.Positive.via_monotone Obj.obj
       (C.Set (Product.SAxis0, C.Const_max Regionality))
       (S.Positive.disallow_left m)
 
   let set_regionality_min m =
-    S.Positive.via_monotone Obj.obj_s
+    S.Positive.via_monotone Obj.obj
       (C.Set (Product.SAxis0, C.Const_min Regionality))
       (S.Positive.disallow_right m)
 
   let linearity m =
-    S.Positive.via_monotone Linearity.Obj.obj_s (C.Proj (Obj.obj, Axis1)) m
+    S.Positive.via_monotone Linearity.Obj.obj (C.Proj (Obj.obj, Axis1)) m
 
   let min_with_linearity m =
-    S.Positive.via_monotone Obj.obj_s (C.Min_with Axis1)
+    S.Positive.via_monotone Obj.obj (C.Min_with Axis1)
       (S.Positive.disallow_right m)
 
   let max_with_linearity m =
-    S.Positive.via_monotone Obj.obj_s (C.Max_with Axis1)
+    S.Positive.via_monotone Obj.obj (C.Max_with Axis1)
       (S.Positive.disallow_left m)
 
   let set_linearity_max m =
-    S.Positive.via_monotone Obj.obj_s
+    S.Positive.via_monotone Obj.obj
       (C.Set (Product.SAxis1, C.Const_max Linearity))
       (S.Positive.disallow_left m)
 
   let set_linearity_min m =
-    S.Positive.via_monotone Obj.obj_s
+    S.Positive.via_monotone Obj.obj
       (C.Set (Product.SAxis1, C.Const_min Linearity))
       (S.Positive.disallow_right m)
 
@@ -1050,8 +1042,6 @@ module Comonadic_with_locality = struct
     module Solver = S.Positive
 
     let obj : const C.obj = C.Comonadic_with_locality
-
-    let obj_s : const Solver.obj = Solver.lift_obj obj
   end
 
   include Common (Obj)
@@ -1063,44 +1053,44 @@ module Comonadic_with_locality = struct
   type equate_error = equate_step * error
 
   let locality m =
-    S.Positive.via_monotone Locality.Obj.obj_s (C.Proj (Obj.obj, Axis0)) m
+    S.Positive.via_monotone Locality.Obj.obj (C.Proj (Obj.obj, Axis0)) m
 
   let min_with_locality m =
-    S.Positive.via_monotone Obj.obj_s (C.Min_with Axis0)
+    S.Positive.via_monotone Obj.obj (C.Min_with Axis0)
       (S.Positive.disallow_right m)
 
   let max_with_locality m =
-    S.Positive.via_monotone Obj.obj_s (C.Max_with Axis0)
+    S.Positive.via_monotone Obj.obj (C.Max_with Axis0)
       (S.Positive.disallow_left m)
 
   let set_locality_max m =
-    S.Positive.via_monotone Obj.obj_s
+    S.Positive.via_monotone Obj.obj
       (C.Set (Product.SAxis0, C.Const_max Locality))
       (S.Positive.disallow_left m)
 
   let set_locality_min m =
-    S.Positive.via_monotone Obj.obj_s
+    S.Positive.via_monotone Obj.obj
       (C.Set (Product.SAxis0, C.Const_min Locality))
       (S.Positive.disallow_right m)
 
   let linearity m =
-    S.Positive.via_monotone Linearity.Obj.obj_s (C.Proj (Obj.obj, Axis1)) m
+    S.Positive.via_monotone Linearity.Obj.obj (C.Proj (Obj.obj, Axis1)) m
 
   let min_with_linearity m =
-    S.Positive.via_monotone Obj.obj_s (C.Min_with Axis1)
+    S.Positive.via_monotone Obj.obj (C.Min_with Axis1)
       (S.Positive.disallow_right m)
 
   let max_with_linearity m =
-    S.Positive.via_monotone Obj.obj_s (C.Max_with Axis1)
+    S.Positive.via_monotone Obj.obj (C.Max_with Axis1)
       (S.Positive.disallow_left m)
 
   let set_linearity_max m =
-    S.Positive.via_monotone Obj.obj_s
+    S.Positive.via_monotone Obj.obj
       (C.Set (Product.SAxis1, C.Const_max Linearity))
       (S.Positive.disallow_left m)
 
   let set_linearity_min m =
-    S.Positive.via_monotone Obj.obj_s
+    S.Positive.via_monotone Obj.obj
       (C.Set (Product.SAxis1, C.Const_min Linearity))
       (S.Positive.disallow_right m)
 
@@ -1683,7 +1673,7 @@ end
 let alloc_as_value m =
   let { comonadic; monadic } = m in
   let comonadic =
-    S.Positive.via_monotone Value.Comonadic.Obj.obj_s
+    S.Positive.via_monotone Value.Comonadic.Obj.obj
       (C.Set (Product.SAxis0, C.Locality_as_regionality))
       comonadic
   in
@@ -1692,7 +1682,7 @@ let alloc_as_value m =
 let alloc_to_value_l2r m =
   let { comonadic; monadic } = Alloc.disallow_right m in
   let comonadic =
-    S.Positive.via_monotone Value.Comonadic.Obj.obj_s
+    S.Positive.via_monotone Value.Comonadic.Obj.obj
       (C.Set (Product.SAxis0, C.Local_to_regional))
       comonadic
   in
@@ -1702,7 +1692,7 @@ let value_to_alloc_r2g : type l r. (l * r) Value.t -> (l * r) Alloc.t =
  fun m ->
   let { comonadic; monadic } = m in
   let comonadic =
-    S.Positive.via_monotone Alloc.Comonadic.Obj.obj_s
+    S.Positive.via_monotone Alloc.Comonadic.Obj.obj
       (C.Set (Product.SAxis0, C.Regional_to_global))
       comonadic
   in
@@ -1711,7 +1701,7 @@ let value_to_alloc_r2g : type l r. (l * r) Value.t -> (l * r) Alloc.t =
 let value_to_alloc_r2l m =
   let { comonadic; monadic } = m in
   let comonadic =
-    S.Positive.via_monotone Alloc.Comonadic.Obj.obj_s
+    S.Positive.via_monotone Alloc.Comonadic.Obj.obj
       (C.Set (Product.SAxis0, C.Regional_to_local))
       comonadic
   in
