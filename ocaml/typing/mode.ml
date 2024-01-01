@@ -1006,10 +1006,6 @@ let locality_as_regionality m =
 let regional_to_global m =
   S.Positive.via_monotone Locality.Obj.obj C.Regional_to_global m
 
-module Const = struct
-  let unique_to_linear a = C.unique_to_linear a
-end
-
 module Comonadic_with_regionality = struct
   module Const = C.Comonadic_with_regionality
 
@@ -1024,7 +1020,7 @@ module Comonadic_with_regionality = struct
   include Common (Obj)
 
   type error =
-    [ `Regionality of Regionality.error
+    [ `Areality of Regionality.error
     | `Linearity of Linearity.error ]
 
   type equate_error = equate_step * error
@@ -1085,7 +1081,7 @@ module Comonadic_with_regionality = struct
         if Linearity.Const.le lin0 lin1
         then assert false
         else Error (`Linearity { left = lin0; right = lin1 })
-      else Error (`Regionality { left = reg0; right = reg1 })
+      else Error (`Areality { left = reg0; right = reg1 })
 
   (* override to report the offending axis *)
   let equate = equate_from_submode submode
@@ -1113,7 +1109,7 @@ module Comonadic_with_locality = struct
   include Common (Obj)
 
   type error =
-    [ `Locality of Locality.error
+    [ `Areality of Locality.error
     | `Linearity of Linearity.error ]
 
   type equate_error = equate_step * error
@@ -1174,7 +1170,7 @@ module Comonadic_with_locality = struct
         if Linearity.Const.le lin0 lin1
         then assert false
         else Error (`Linearity { left = lin0; right = lin1 })
-      else Error (`Locality { left = loc0; right = loc1 })
+      else Error (`Areality { left = loc0; right = loc1 })
 
   (* override to report the offending axis *)
   let equate = equate_from_submode submode
@@ -1279,10 +1275,10 @@ module Value = struct
 
   let linearity { comonadic; _ } = Comonadic.linearity comonadic
 
-  let regionality { comonadic; _ } = Comonadic.regionality comonadic
+  let areality { comonadic; _ } = Comonadic.regionality comonadic
 
   type error =
-    [ `Regionality of Regionality.error
+    [ `Areality of Regionality.error
     | `Uniqueness of Uniqueness.error
     | `Linearity of Linearity.error ]
 
@@ -1368,22 +1364,22 @@ module Value = struct
     let monadic = Monadic.set_uniqueness_min monadic in
     { monadic; comonadic }
 
-  let min_with_regionality regionality =
+  let min_with_areality regionality =
     let comonadic = Comonadic.min_with_regionality regionality in
     let monadic = Monadic.min |> Monadic.disallow_right |> Monadic.allow_left in
     { comonadic; monadic }
 
-  let max_with_regionality regionality =
+  let max_with_areality regionality =
     let comonadic = Comonadic.max_with_regionality regionality in
     let monadic = Monadic.max |> Monadic.disallow_left |> Monadic.allow_right in
     { comonadic; monadic }
 
-  let set_regionality_min { monadic; comonadic } =
+  let set_areality_min { monadic; comonadic } =
     let monadic = Monadic.disallow_right monadic in
     let comonadic = Comonadic.set_regionality_min comonadic in
     { comonadic; monadic }
 
-  let set_regionality_max { monadic; comonadic } =
+  let set_areality_max { monadic; comonadic } =
     let monadic = Monadic.disallow_left monadic in
     let comonadic = Comonadic.set_regionality_max comonadic in
     { comonadic; monadic }
@@ -1519,10 +1515,10 @@ module Alloc = struct
 
   let linearity { comonadic; _ } = Comonadic.linearity comonadic
 
-  let locality { comonadic; _ } = Comonadic.locality comonadic
+  let areality { comonadic; _ } = Comonadic.locality comonadic
 
   type error =
-    [ `Locality of Locality.error
+    [ `Areality of Locality.error
     | `Uniqueness of Uniqueness.error
     | `Linearity of Linearity.error ]
 
@@ -1612,22 +1608,22 @@ module Alloc = struct
     let monadic = Monadic.set_uniqueness_min monadic in
     { monadic; comonadic }
 
-  let min_with_locality locality =
+  let min_with_areality locality =
     let comonadic = Comonadic.min_with_locality locality in
     let monadic = Monadic.min |> Monadic.disallow_right |> Monadic.allow_left in
     { comonadic; monadic }
 
-  let max_with_locality locality =
+  let max_with_areality locality =
     let comonadic = Comonadic.max_with_locality locality in
     let monadic = Monadic.max |> Monadic.disallow_left |> Monadic.allow_right in
     { comonadic; monadic }
 
-  let set_locality_min { monadic; comonadic } =
+  let set_areality_min { monadic; comonadic } =
     let monadic = Monadic.disallow_right monadic in
     let comonadic = Comonadic.set_locality_min comonadic in
     { comonadic; monadic }
 
-  let set_locality_max { monadic; comonadic } =
+  let set_areality_max { monadic; comonadic } =
     let monadic = Monadic.disallow_left monadic in
     let comonadic = Comonadic.set_locality_max comonadic in
     { comonadic; monadic }
@@ -1701,31 +1697,31 @@ module Alloc = struct
       ( Locality.Const.join l0 r0,
         Linearity.Const.join l1 r1,
         Uniqueness.Const.join l2 r2 )
-
-    (** constrain uncurried function ret_mode from arg_mode *)
-    let close_over (locality, linearity, uniqueness) =
-      let locality' = locality in
-      (* uniqueness of the returned function is not constrained *)
-      let uniqueness' = Uniqueness.Const.min in
-      let linearity' =
-        Linearity.Const.join linearity
-          (* In addition, unique argument make the returning function once.
-             In other words, if argument <= unique, returning function >= once.
-             That is, returning function >= (dual of argument) *)
-          (Const.unique_to_linear uniqueness)
-      in
-      locality', linearity', uniqueness'
-
-    (** constrain uncurried function ret_mode from the mode of the whole function *)
-    let partial_apply (locality, linearity, _) =
-      let locality' = locality in
-      let uniqueness' = Uniqueness.Const.min in
-      let linearity' = linearity in
-      locality', linearity', uniqueness'
   end
 
+  (** constrain uncurried function ret_mode from arg_mode *)
+  let close_over_const (locality, linearity, uniqueness) =
+    let locality' = locality in
+    (* uniqueness of the returned function is not constrained *)
+    let uniqueness' = Uniqueness.Const.min in
+    let linearity' =
+      Linearity.Const.join linearity
+        (* In addition, unique argument make the returning function once.
+           In other words, if argument <= unique, returning function >= once.
+           That is, returning function >= (dual of argument) *)
+        (C.unique_to_linear uniqueness)
+    in
+    locality', linearity', uniqueness'
+
+  (** constrain uncurried function ret_mode from the mode of the whole function *)
+  let partial_apply_const (locality, linearity, _) =
+    let locality' = locality in
+    let uniqueness' = Uniqueness.Const.min in
+    let linearity' = linearity in
+    locality', linearity', uniqueness'
+
   let close_over comonadic monadic =
-    let locality = min_with_locality (Comonadic.locality comonadic) in
+    let locality = min_with_areality (Comonadic.locality comonadic) in
     (* uniqueness of the returned function is not constrained *)
     let linearity0 = min_with_linearity (Comonadic.linearity comonadic) in
     let linearity1 =

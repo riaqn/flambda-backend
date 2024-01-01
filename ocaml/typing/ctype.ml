@@ -1581,9 +1581,9 @@ let rec instance_prim_locals locals mvar macc finalret ty =
   match locals, get_desc ty with
   | l :: locals, Tarrow ((lbl,marg,mret),arg,ret,commu) ->
       let marg' = Alloc.newvar () in
-      Locality.equate_exn (Alloc.locality marg') (prim_mode (Some mvar) l);
-      Alloc.submode_exn marg' (Alloc.set_locality_max marg);
-      Alloc.submode_exn (Alloc.set_locality_min marg) marg';
+      Locality.equate_exn (Alloc.areality marg') (prim_mode (Some mvar) l);
+      Alloc.submode_exn marg' (Alloc.set_areality_max marg);
+      Alloc.submode_exn (Alloc.set_areality_min marg) marg';
       let marg = marg' in
      let macc =
        Alloc.join [Alloc.disallow_right mret;
@@ -1595,9 +1595,9 @@ let rec instance_prim_locals locals mvar macc finalret ty =
        match locals with
        | [] -> begin
           let mret' = Alloc.newvar () in
-          Alloc.submode_exn mret' (Alloc.set_locality_max mret);
-          Alloc.submode_exn (Alloc.set_locality_min mret) mret';
-          Locality.equate_exn (Alloc.locality mret') finalret;
+          Alloc.submode_exn mret' (Alloc.set_areality_max mret);
+          Alloc.submode_exn (Alloc.set_areality_min mret) mret';
+          Locality.equate_exn (Alloc.areality mret') finalret;
           mret'
        end
        | _ :: _ ->
