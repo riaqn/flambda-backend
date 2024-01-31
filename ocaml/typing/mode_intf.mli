@@ -282,16 +282,18 @@ module type S = sig
 
     val zap_to_legacy : lr -> Const.t
 
-        (** Returns the lower bound needed for a closure in relation to argument *)
+    (** Returns the lower bound needed for a closure in relation to argument *)
     val close_over : (allowed * 'r) Comonadic.t -> ('l * allowed) Monadic.t -> l
 
-    (** Returns the lower bound needed for a closure in relation to the outer function *)
+    (** Returns the lower bound needed for a closure in relation to the outer
+        function *)
     val partial_apply : (allowed * 'r) t -> l
 
     (** Returns the lower bound needed for a closure in relation to argument *)
     val close_over_const : Const.t -> Const.t
 
-    (** Returns the lower bound needed for a closure in relation to the outer function *)
+    (** Returns the lower bound needed for a closure in relation to the outer
+        function *)
     val partial_apply_const : Const.t -> Const.t
   end
 
