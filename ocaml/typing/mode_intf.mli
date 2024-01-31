@@ -281,19 +281,8 @@ module type S = sig
     val set_uniqueness_max : ('l * 'r) t -> (disallowed * 'r) t
 
     val zap_to_legacy : lr -> Const.t
-  end
 
-  (** The most general mode. Used in most type checking,
-      including in value bindings in [Env] *)
-  module Value : Mode with module Areality := Regionality
-
-  (** The mode on arrow types. Compared to [Value], it contains the [Locality]
-      axis instead of [Regionality] axis, as arrow types are exposed to users
-      and would be hard to understand if it involves [Regionality]. *)
-  module Alloc : sig
-    include Mode with module Areality := Locality
-
-    (** Returns the lower bound needed for a closure in relation to argument *)
+        (** Returns the lower bound needed for a closure in relation to argument *)
     val close_over : (allowed * 'r) Comonadic.t -> ('l * allowed) Monadic.t -> l
 
     (** Returns the lower bound needed for a closure in relation to the outer function *)
@@ -305,6 +294,15 @@ module type S = sig
     (** Returns the lower bound needed for a closure in relation to the outer function *)
     val partial_apply_const : Const.t -> Const.t
   end
+
+  (** The most general mode. Used in most type checking,
+      including in value bindings in [Env] *)
+  module Value : Mode with module Areality := Regionality
+
+  (** The mode on arrow types. Compared to [Value], it contains the [Locality]
+      axis instead of [Regionality] axis, as arrow types are exposed to users
+      and would be hard to understand if it involves [Regionality]. *)
+  module Alloc : Mode with module Areality := Locality
 
   (** Returns the linearity dual to the given uniqueness *)
   val unique_to_linear : ('l * 'r) Uniqueness.t -> ('r * 'l) Linearity.t
