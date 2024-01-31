@@ -685,8 +685,8 @@ and transl_type_aux env ~row_context ~aliased ~policy mode styp =
           let arg_cty = transl_type env ~policy ~row_context arg_mode arg in
           let (loc, lin, _) =
             Alloc.Const.join
-              (Alloc.close_over_const arg_mode)
-              (Alloc.partial_apply_const acc_mode)
+              (Alloc.Const.close_over arg_mode)
+              (Alloc.Const.partial_apply acc_mode)
           in
           let acc_mode = (loc, lin, Uniqueness.Const.Shared) in
           let ret_mode =

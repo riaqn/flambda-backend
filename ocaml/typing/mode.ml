@@ -1380,28 +1380,28 @@ module Mode (Areality : Areality) = struct
       ( Areality.Const.join l0 r0,
         Linearity.Const.join l1 r1,
         Uniqueness.Const.join l2 r2 )
+
+    (** constrain uncurried function ret_mode from arg_mode *)
+    let close_over (areality, linearity, uniqueness) =
+      let areality' = areality in
+      (* uniqueness of the returned function is not constrained *)
+      let uniqueness' = Uniqueness.Const.min in
+      let linearity' =
+        Linearity.Const.join linearity
+          (* In addition, unique argument make the returning function once.
+             In other words, if argument <= unique, returning function >= once.
+             That is, returning function >= (dual of argument) *)
+          (C.unique_to_linear uniqueness)
+      in
+      areality', linearity', uniqueness'
+
+    (** constrain uncurried function ret_mode from the mode of the whole function *)
+    let partial_apply (areality, linearity, _) =
+      let areality' = areality in
+      let uniqueness' = Uniqueness.Const.min in
+      let linearity' = linearity in
+      areality', linearity', uniqueness'
   end
-
-  (** constrain uncurried function ret_mode from arg_mode *)
-  let close_over_const (areality, linearity, uniqueness) =
-    let areality' = areality in
-    (* uniqueness of the returned function is not constrained *)
-    let uniqueness' = Uniqueness.Const.min in
-    let linearity' =
-      Linearity.Const.join linearity
-        (* In addition, unique argument make the returning function once.
-           In other words, if argument <= unique, returning function >= once.
-           That is, returning function >= (dual of argument) *)
-        (C.unique_to_linear uniqueness)
-    in
-    areality', linearity', uniqueness'
-
-  (** constrain uncurried function ret_mode from the mode of the whole function *)
-  let partial_apply_const (areality, linearity, _) =
-    let areality' = areality in
-    let uniqueness' = Uniqueness.Const.min in
-    let linearity' = linearity in
-    areality', linearity', uniqueness'
 
   let close_over comonadic monadic =
     let areality = min_with_areality (Comonadic.areality comonadic) in

@@ -218,9 +218,20 @@ module type S = sig
       val linearity : ('l * 'r) t -> ('l * 'r) Linearity.t
     end
 
-    module Const :
-      Lattice
-        with type t = Areality.Const.t * Linearity.Const.t * Uniqueness.Const.t
+    module Const : sig
+      include
+        Lattice
+          with type t =
+            Areality.Const.t * Linearity.Const.t * Uniqueness.Const.t
+
+      (** Returns the lower bound needed for a closure in relation to argument
+          *)
+      val close_over : t -> t
+
+      (** Returns the lower bound needed for a closure in relation to the outer
+        function *)
+      val partial_apply : t -> t
+    end
 
     type error =
       [ `Areality of Areality.error
@@ -288,13 +299,6 @@ module type S = sig
     (** Returns the lower bound needed for a closure in relation to the outer
         function *)
     val partial_apply : (allowed * 'r) t -> l
-
-    (** Returns the lower bound needed for a closure in relation to argument *)
-    val close_over_const : Const.t -> Const.t
-
-    (** Returns the lower bound needed for a closure in relation to the outer
-        function *)
-    val partial_apply_const : Const.t -> Const.t
   end
 
   (** The most general mode. Used in most type checking,
