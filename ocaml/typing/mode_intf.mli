@@ -403,11 +403,9 @@ module type S = sig
        function [A -> B -> C] to [A] and get back [B -> C]. The mode of the
        three are constrained. *)
 
-    (** Returns the lower bound needed for [B -> C] in relation to [A] *)
-    val close_over : lr -> l
-
-    (** Returns the lower bound needed for [B -> C] in relation to [A -> B -> C] *)
-    val partial_apply : (allowed * 'r) t -> l
+    (** Returns the lower bound needed for [B -> C] in a partial application
+        of [A -> B -> C] to [A]. *)
+    val partial_apply : fun_mode:(allowed * 'r) t -> arg_modes:lr list -> l
   end
 
   (** Returns the linearity dual to the given uniqueness *)
