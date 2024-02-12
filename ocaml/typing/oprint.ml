@@ -340,14 +340,6 @@ let join_locality lm1 lm2 =
   | _, Olm_unknown -> Olm_unknown
   | Olm_global, Olm_global -> Olm_global
 
-let join_uniqueness u1 u2 =
-  match u1, u2 with
-  | Oum_shared, _ -> Oum_shared
-  | _, Oum_shared -> Oum_shared
-  | Oum_unknown, _ -> Oum_unknown
-  | _, Oum_unknown -> Oum_unknown
-  | Oum_unique, Oum_unique -> Oum_unique
-
 let join_linearity l1 l2 =
   match l1, l2 with
   | Olinm_once, _
@@ -361,33 +353,25 @@ let uniqueness_to_linearity = function
   | Oum_shared -> Olinm_many
   | Oum_unknown -> Olinm_unknown
 
-let join_modes m1 m2 =
-  { oam_locality = join_locality m1.oam_locality m2.oam_locality;
-    oam_uniqueness = join_uniqueness m1.oam_uniqueness m2.oam_uniqueness;
-    oam_linearity = join_linearity m1.oam_linearity m2.oam_linearity }
-
 let default_mode =
   { oam_locality = Olm_global;
     oam_uniqueness = Oum_shared;
     oam_linearity = Olinm_many; }
 
-let close_over arg_mode =
-  let oam_locality = arg_mode.oam_locality in
+let partial_apply ~fun_mode ~arg_mode =
+  let oam_locality =
+    join_locality fun_mode.oam_locality arg_mode.oam_locality
+  in
   let oam_uniqueness = Oum_shared in
   let oam_linearity =
-    join_linearity
-      arg_mode.oam_linearity
-      (uniqueness_to_linearity arg_mode.oam_uniqueness)
+    join_linearity fun_mode.oam_linearity
+      (join_linearity
+         arg_mode.oam_linearity
+         (uniqueness_to_linearity arg_mode.oam_uniqueness))
   in
   { oam_locality;
     oam_uniqueness;
     oam_linearity }
-
-let partial_apply alloc_mode =
-  let oam_locality = alloc_mode.oam_locality in
-  let oam_uniqueness = Oum_shared in
-  let oam_linearity = alloc_mode.oam_linearity in
-  { oam_locality; oam_uniqueness; oam_linearity }
 
 (* Following functions are used to check if the return mode can omitted in the
    case of currying *)
@@ -503,11 +487,7 @@ and print_out_type_1 mode ppf =
       print_out_arg am ppf ty1;
       pp_print_string ppf " ->";
       pp_print_space ppf ();
-      let mode =
-        join_modes
-          (partial_apply mode)
-          (close_over am)
-      in
+      let mode = partial_apply ~fun_mode:mode ~arg_mode:am in
       print_out_ret mode rm ppf ty2;
       pp_close_box ppf ()
   | ty -> print_out_type_mode ~arg:false mode ppf ty
