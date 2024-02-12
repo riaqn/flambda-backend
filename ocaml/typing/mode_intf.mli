@@ -336,11 +336,8 @@ module type S = sig
         val value : t -> default:some -> some
       end
 
-      (** Similar to [Alloc.close_over] but for constants *)
-      val close_over : t -> t
-
       (** Similar to [Alloc.partial_apply] but for constants *)
-      val partial_apply : t -> t
+      val partial_apply : fun_mode:t -> arg_mode:t -> t
     end
 
     type error =

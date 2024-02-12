@@ -1720,24 +1720,18 @@ module Alloc = struct
     end
 
     (** See [Alloc.partial_apply] for explanation. *)
-    let close_over m =
-      let locality = m.locality in
+    let partial_apply ~fun_mode ~arg_mode =
+      let locality = Locality.Const.join fun_mode.locality arg_mode.locality in
       (* uniqueness of the returned function is not constrained *)
       let uniqueness = Uniqueness.Const.min in
       let linearity =
-        Linearity.Const.join m.linearity
-          (* In addition, unique argument make the returning function once.
-             In other words, if argument <= unique, returning function >= once.
-             That is, returning function >= (dual of argument) *)
-          (Const.unique_to_linear m.uniqueness)
+        Linearity.Const.join fun_mode.linearity
+          (Linearity.Const.join arg_mode.linearity
+             (* In addition, unique argument make the returning function once.
+                In other words, if argument <= unique, returning function >=
+                once.  That is, returning function >= (dual of argument) *)
+             (Const.unique_to_linear arg_mode.uniqueness))
       in
-      { locality; linearity; uniqueness }
-
-    (** See [Alloc.partial_apply] for explanation. *)
-    let partial_apply m =
-      let locality = m.locality in
-      let uniqueness = Uniqueness.Const.min in
-      let linearity = m.linearity in
       { locality; linearity; uniqueness }
   end
 

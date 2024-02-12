@@ -684,9 +684,7 @@ and transl_type_aux env ~row_context ~aliased ~policy mode styp =
           check_arg_type arg;
           let arg_cty = transl_type env ~policy ~row_context arg_mode arg in
           let {locality; linearity; _} : Alloc.Const.t =
-            Alloc.Const.join
-              (Alloc.Const.close_over arg_mode)
-              (Alloc.Const.partial_apply acc_mode)
+              Alloc.Const.partial_apply ~fun_mode:acc_mode ~arg_mode
           in
           (* Arrow types cross uniqueness axis. Therefore, when user writes an
           A -> B -> C (to be used as constraint on something), we should make
