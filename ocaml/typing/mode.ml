@@ -1719,25 +1719,19 @@ module Alloc = struct
         { locality; uniqueness; linearity }
     end
 
-    (** See [Alloc.close_over] for explanation. *)
-    let close_over m =
-      let locality = m.locality in
+    (** See [Alloc.partial_apply] for explanation. *)
+    let partial_apply ~fun_mode ~arg_mode =
+      let locality = Locality.Const.join fun_mode.locality arg_mode.locality in
       (* uniqueness of the returned function is not constrained *)
       let uniqueness = Uniqueness.Const.min in
       let linearity =
-        Linearity.Const.join m.linearity
-          (* In addition, unique argument make the returning function once.
-             In other words, if argument <= unique, returning function >= once.
-             That is, returning function >= (dual of argument) *)
-          (Const.unique_to_linear m.uniqueness)
+        Linearity.Const.join fun_mode.linearity
+          (Linearity.Const.join arg_mode.linearity
+             (* In addition, unique argument make the returning function once.
+                In other words, if argument <= unique, returning function >=
+                once.  That is, returning function >= (dual of argument) *)
+             (Const.unique_to_linear arg_mode.uniqueness))
       in
-      { locality; linearity; uniqueness }
-
-    (** See [Alloc.partial_apply] for explanation. *)
-    let partial_apply m =
-      let locality = m.locality in
-      let uniqueness = Uniqueness.Const.min in
-      let linearity = m.linearity in
       { locality; linearity; uniqueness }
   end
 
@@ -1760,29 +1754,28 @@ module Alloc = struct
     let uniqueness = Monadic.check_const monadic in
     { locality; linearity; uniqueness }
 
-  (** This is about partially applying [A -> B -> C] to [A] and getting [B ->
-    C]. [comonadic] and [monadic] constutute the mode of [A], and we need to
-    give the lower bound mode of [B -> C]. *)
-  let close_over { comonadic; monadic } =
-    (* If [A] is [local], [B -> C] containining a pointer to [A] must
-       be [local] too. *)
-    let locality = min_with_locality (Comonadic.locality comonadic) in
-    (* [B -> C] is arrow type and thus crosses uniqueness *)
-    (* If [A] is [once], [B -> C] containing a pointer to [A] must be [once] too
-    *)
-    let linearity0 = min_with_linearity (Comonadic.linearity comonadic) in
-    (* Moreover, if [A] is [unique], [B -> C] must be [once]. *)
-    let linearity1 =
-      min_with_linearity (unique_to_linear (Monadic.uniqueness monadic))
-    in
-    join [locality; linearity0; linearity1]
-
-  (** Similar to above, but we are given the mode of [A -> B -> C], and need to
-      give the lower bound mode of [B -> C]. *)
-  let partial_apply alloc_mode =
-    (* [B -> C] should be always higher than [A -> B -> C] except the uniqueness
-       axis where it's not constrained *)
-    set_uniqueness_min alloc_mode
+  (** This is about partially applying [As -> B -> C] to [As] and getting [B ->
+      C]. Given the mode of [As -> B -> C] and the mode of [As], give the lower
+      bound mode of [B -> C]. *)
+  let partial_apply ~fun_mode ~arg_modes =
+    List.fold_left
+      (fun acc { comonadic; monadic } ->
+        (* If [A] is [local], [B -> C] containining a pointer to [A] must
+           be [local] too. *)
+        let locality = min_with_locality (Comonadic.locality comonadic) in
+        (* [B -> C] is arrow type and thus crosses uniqueness *)
+        (* If [A] is [once], [B -> C] containing a pointer to [A] must be [once]
+           too *)
+        let linearity0 = min_with_linearity (Comonadic.linearity comonadic) in
+        (* Moreover, if [A] is [unique], [B -> C] must be [once]. *)
+        let linearity1 =
+          min_with_linearity (unique_to_linear (Monadic.uniqueness monadic))
+        in
+        (* We don't need to do anything with uniqueness, as the minimum
+           element [unique] is all we need. *)
+        join [locality; linearity0; linearity1; acc])
+      (set_uniqueness_min fun_mode)
+      arg_modes
 end
 
 let alloc_as_value m =
