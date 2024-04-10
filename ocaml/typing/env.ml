@@ -3964,6 +3964,7 @@ let report_lookup_error _loc env ppf = function
         match error with
         | Error (Areality, _) -> "local", "might escape"
         | Error (Linearity, _) -> "once", "is many"
+        | Error (Portability, _) -> "unportable", "is portable"
       in
       fprintf ppf
       "@[The value %a is %s, so cannot be used \

@@ -94,11 +94,11 @@ annotation.
 As a preview, we are going to describing 5 mode axes in this document,
 which have the following modes ordered by increasing strictness.
 
-| Locality | Sync   | Uniqueness | Linearity  | Readonly  |
-| -------- | ------ | ---------- | ---------- | --------- |
-| Local    | Unsync | Shared     | Once       | Readonly  |
-| Global   | Sync   | Exclusive  | Separate   | Readwrite |
-|          |        | Unique     | Many       |           |
+| Locality | Portable   | Uniqueness | Linearity  | Readonly  |
+| -------- | ---------- | ---------- | ---------- | --------- |
+| Local    | Unportable | Shared     | Once       | Readonly  |
+| Global   | Portable   | Exclusive  | Separate   | Readwrite |
+|          |            | Unique     | Many       |           |
 
 The *locality* axis tracks which values can leave regions. The *sync*
 axis tracks which values are allowed to be shared with other

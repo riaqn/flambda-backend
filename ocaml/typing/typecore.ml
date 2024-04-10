@@ -861,17 +861,30 @@ let apply_mode_annots ~loc ~env (m : Alloc.Const.Option.t) mode =
   | Ok () -> ()
   | Error e -> error (Right_le_left, e))
 
-(** Takes the mutability and modalities on a record field, and [m] which is a
-    left mode on the record being accessed, returns the left mode of the
-    projected field. *)
-let project_field mutability modalities (m : (allowed * _) Value.t) =
-  ignore mutability;
+let mode_project_mutable =
+  Contention.Const.Uncontended
+  |> Contention.of_const
+  |> Value.max_with (Monadic Contention)
+  |> mode_default
+
+let mode_mutate_mutable =
+  Contention.Const.Uncontended
+  |> Contention.of_const
+  |> Value.max_with (Monadic Contention)
+  |> mode_default
+
+(** Takes [mutability] and [modalities] on a record field, and [m] which is a
+    left mode on the record being accessed, checks contention and returns the
+    left mode of the projected field. *)
+let project_field ~loc ~env mutability modalities (m : (allowed * _) Value.t) =
+  (if Types.is_mutable mutability then
+    submode ~loc ~env m mode_project_mutable);
   modality_unbox_left modalities m
 
 (** Takes [m0] which is the parameter on mutable, and [m] which is a right mode
     on the record being constructed, returns the right mode for the mutable
     field used for construction. *)
-let construct_mutable m0 m =
+let construct_mutable ~loc ~env m0 m =
   let m0 =
     Alloc.Const.merge
       {comonadic = m0;
@@ -880,17 +893,14 @@ let construct_mutable m0 m =
   let m0 = Const.alloc_as_value m0 in
   (* We require [join m0 ret <= m], which is equivalent to [m0 <= m] and [ret <=
     m].  *)
-  (match Value.submode (Value.of_const m0) m with
-  | Ok () -> ()
-  | Error _ -> Misc.fatal_error
-      "mutable defaults to Comonadic.legacy, \
-      which is min, so this call cannot fail."
-  );
-  m |> Value.disallow_left
+  submode ~loc ~env (Value.of_const m0) m;
+  m
 
-(** Takes [m0] which is the parameter on mutable, returns the right mode for the
-    new value of the mutable field. *)
-let mutate_mutable m0 =
+(** Takes [m0] which is the parameter on mutable, and [m] which is a left mode
+    on the record being mutated, checks contention and returns the right mode
+    for the new value of the mutable field. *)
+let mutate_mutable ~loc ~env m0 (m : (allowed * _) Value.t) =
+  submode ~loc ~env m mode_mutate_mutable;
   let m0 =
     Alloc.Const.merge
       {comonadic = m0;
@@ -902,14 +912,13 @@ let mutate_mutable m0 =
 (** Takes the mutability and modalities on the field, and expected mode of the
     record (adjusted for allocation), returns the expected mode for the field.
     *)
-let construct_field mutability modalities (argument_mode : expected_mode) =
-  let mode =
+let construct_field ~loc ~env mutability modalities (argument_mode : expected_mode) =
+  let argument_mode =
     match mutability with
-    | Immutable -> argument_mode.mode
-    | Mutable m0 -> construct_mutable m0 argument_mode.mode
+    | Immutable -> argument_mode
+    | Mutable m0 -> construct_mutable ~loc ~env m0 argument_mode
   in
-  let mode = modality_box_right modalities mode in
-  mode_default mode
+  mode_default (modality_box_right modalities argument_mode.mode)
 
 (* Typing of patterns *)
 
@@ -2413,7 +2422,7 @@ and type_pat_aux
       (* CR zqian: decouple mutable and global modality *)
       if Types.is_mutable mutability then Global else Unrestricted
     in
-    let alloc_mode = project_field mutability modalities alloc_mode.mode in
+    let alloc_mode = project_field ~loc ~env:!env mutability modalities alloc_mode.mode in
     let alloc_mode = simple_pat_mode alloc_mode in
     let pl = List.map (fun p -> type_pat ~alloc_mode tps Value p ty_elt) spl in
     rvp {
@@ -2656,7 +2665,7 @@ and type_pat_aux
       let args =
         List.map2
           (fun p (ty, gf) ->
-             let alloc_mode = project_field Immutable gf alloc_mode.mode in
+             let alloc_mode = project_field ~loc ~env:!env Immutable gf alloc_mode.mode in
              let alloc_mode = simple_pat_mode alloc_mode in
              type_pat ~alloc_mode tps Value p ty)
           sargs (List.combine ty_args_ty ty_args_gf)
@@ -2699,7 +2708,7 @@ and type_pat_aux
       let type_label_pat (label_lid, label, sarg) =
         let ty_arg =
           solve_Ppat_record_field ~refine loc env label label_lid record_ty in
-        let mode = project_field label.lbl_mut label.lbl_global alloc_mode.mode in
+        let mode = project_field ~loc ~env:!env label.lbl_mut label.lbl_global alloc_mode.mode in
         let alloc_mode = simple_pat_mode mode in
         (label_lid, label, type_pat tps Value ~alloc_mode sarg ty_arg)
       in
@@ -5551,7 +5560,7 @@ and type_expect_
           None, expected_mode
       in
       let type_label_exp ((_, label, _) as x) =
-        let argument_mode = construct_field label.lbl_mut label.lbl_global argument_mode in
+        let argument_mode = construct_field ~loc ~env label.lbl_mut label.lbl_global argument_mode in
         type_label_exp true env argument_mode loc ty_record x
       in
       let lbl_exp_list = List.map type_label_exp lbl_a_list in
@@ -5612,8 +5621,8 @@ and type_expect_
                   unify_exp_types loc env ty_arg1 ty_arg2;
                   with_explanation (fun () ->
                     unify_exp_types loc env (instance ty_expected) ty_res2);
-                  let mode = project_field lbl.lbl_mut lbl.lbl_global mode in
-                  let argument_mode = construct_field lbl.lbl_mut lbl.lbl_global argument_mode in
+                  let mode = project_field ~loc:exp.exp_loc ~env lbl.lbl_mut lbl.lbl_global mode in
+                  let argument_mode = construct_field ~loc ~env lbl.lbl_mut lbl.lbl_global argument_mode in
                   submode ~loc ~env mode argument_mode;
                   Kept (ty_arg1, lbl.lbl_mut,
                         unique_use ~loc ~env mode argument_mode.mode)
@@ -5659,7 +5668,7 @@ and type_expect_
           ty_arg
         end ~post:generalize_structure
       in
-      let mode = project_field label.lbl_mut label.lbl_global rmode in
+      let mode = project_field ~loc:record.exp_loc ~env label.lbl_mut label.lbl_global rmode in
       let boxing : texp_field_boxing =
         match label.lbl_repres with
         | Record_float ->
@@ -5691,7 +5700,7 @@ and type_expect_
       let (label_loc, label, newval) =
         match label.lbl_mut with
         | Mutable m0 ->
-          let mode = mutate_mutable m0 in
+          let mode = mutate_mutable ~loc:record.exp_loc ~env m0 rmode in
           let mode = modality_box_right label.lbl_global mode in
           type_label_exp false env (mode_default mode) loc
             ty_record (lid, label, snewval)
@@ -7757,7 +7766,7 @@ and type_construct env (expected_mode : expected_mode) loc lid sarg
   let args =
     List.map2
       (fun e ((ty, gf),t0) ->
-         let argument_mode = construct_field Immutable gf argument_mode in
+         let argument_mode = construct_field ~loc ~env Immutable gf argument_mode in
          type_argument ~recarg env argument_mode e ty t0)
       sargs (List.combine ty_args ty_args0)
   in
@@ -8640,7 +8649,7 @@ and type_generic_array
     else
       Predef.type_iarray, Global_flag.Unrestricted
   in
-  let argument_mode = construct_field mutability modalities argument_mode in
+  let argument_mode = construct_field ~loc ~env mutability modalities argument_mode in
   let jkind, elt_sort = Jkind.of_new_sort_var ~why:Array_element in
   let ty = newgenvar jkind in
   let to_unify = type_ ty in
@@ -10056,6 +10065,8 @@ let report_error ~loc env = function
           sharedness_hint fail_reason submode_reason shared_context
         | Error (Comonadic Areality, _) ->
           escaping_hint fail_reason submode_reason closure_context
+        | Error (Comonadic Portability, _ )
+        | Error (Monadic Contention, _ ) -> []
       in
       Location.errorf ~loc ~sub "%t" begin
         match fail_reason with
@@ -10064,9 +10075,13 @@ let report_error ~loc env = function
         | Error (Monadic Uniqueness, {left; right}) ->
             Format.dprintf "Found a %a value where a %a value was expected"
               Uniqueness.Const.print left Uniqueness.Const.print right
+        | Error (Monadic Contention, {left; right}) -> Format.dprintf "Found a %a value where a %a value was expected"
+            Contention.Const.print left Contention.Const.print right
         | Error (Comonadic Linearity, {left; right}) ->
             Format.dprintf "Found a %a value where a %a value was expected"
               Linearity.Const.print left Linearity.Const.print right
+        | Error (Comonadic Portability, {left; right}) -> Format.dprintf "Found a %a value where a %a value was expected"
+            Portability.Const.print left Portability.Const.print right
         end
   | Local_application_complete (lbl, loc_kind) ->
       let sub =
@@ -10108,8 +10123,10 @@ let report_error ~loc env = function
           print_error Locality.Const.print (s, e)
       | Error (Monadic Uniqueness, e) ->
           print_error Uniqueness.Const.print (s, e)
+      | Error (Monadic Contention, e) -> print_error Contention.Const.print (s, e)
       | Error (Comonadic Linearity, e) ->
           print_error Linearity.Const.print (s, e)
+      | Error (Comonadic Portability, e) -> print_error Portability.Const.print (s, e)
       end
   | Uncurried_function_escapes e -> begin
       match e with
@@ -10117,9 +10134,13 @@ let report_error ~loc env = function
           Location.errorf ~loc "This function or one of its parameters escape their region @ \
           when it is partially applied."
       | Error (Monadic Uniqueness, _) -> assert false
+      | Error (Monadic Contention, _) -> assert false
       | Error (Comonadic Linearity, {left; right}) ->
           Location.errorf ~loc "This function when partially applied returns a %a value,@ \
           but expected to be %a." Linearity.Const.print left Linearity.Const.print right
+      | Error (Comonadic Portability, {left; right}) ->
+        Location.errorf ~loc "This function when partially applied returns a %a value,@ \
+        but expected to be %a." Portability.Const.print left Portability.Const.print right
     end
   | Local_return_annotation_mismatch _ ->
       Location.errorf ~loc

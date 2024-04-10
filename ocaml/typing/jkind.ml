@@ -688,7 +688,7 @@ module Jkind_desc = struct
      in-place update, and no record supporting in-place update is an
      immediate64. ([@@unboxed] records do not support in-place update.)
 
-     * Syncness: This is fine, because syncness matters only for function
+     * Portability: This is fine, because portability matters only for function
      types, and an immediate64 cannot be a function type and cannot store
      one either.
 
@@ -704,21 +704,36 @@ module Jkind_desc = struct
   let immediate64 =
     { layout = Layout.value;
       modes_upper_bounds =
-        { locality = Global; linearity = Many; uniqueness = Unique };
+        { locality = Global;
+          linearity = Many;
+          portability = Portable;
+          uniqueness = Unique;
+          contention = Uncontended
+        };
       externality_upper_bound = External64
     }
 
   let immediate =
     { layout = Layout.value;
       modes_upper_bounds =
-        { locality = Global; linearity = Many; uniqueness = Unique };
+        { locality = Global;
+          linearity = Many;
+          portability = Portable;
+          uniqueness = Unique;
+          contention = Uncontended
+        };
       externality_upper_bound = External
     }
 
   let float64 =
     { layout = Layout.float64;
       modes_upper_bounds =
-        { locality = Global; linearity = Many; uniqueness = Unique };
+        { locality = Global;
+          linearity = Many;
+          portability = Portable;
+          uniqueness = Unique;
+          contention = Uncontended
+        };
       externality_upper_bound = External
     }
 
