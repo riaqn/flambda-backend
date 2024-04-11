@@ -481,11 +481,12 @@ module IdTbl =
     (** Find item by name whose accesses are not affected by locks, and thus
         shouldn't encounter any locks. *)
     let find_name wrap ~mark name tbl =
-      match find_name_and_locks wrap ~mark name tbl with
+      match (find_name_and_locks wrap ~mark name tbl
+        : (_ * empty list * _, empty list) Result.t) with
       | Ok (id, [], desc) -> id, desc
-      | Ok (_, _ :: _, _) -> assert false
+      | Ok (_, _ :: _, _) -> .
       | Error [] -> raise Not_found
-      | Error (_ :: _) -> assert false
+      | Error (_ :: _) -> .
 
     let rec find_all wrap name tbl =
       List.map
@@ -950,9 +951,9 @@ let add_persistent_structure id env =
          non-persistent module already in the environment.
          (See PR#9345) *)
       match
-        IdTbl.find_name wrap_module ~mark:false (Ident.name id) env.modules
+        IdTbl.find_name_and_locks wrap_module ~mark:false (Ident.name id) env.modules
       with
-      | exception Not_found | _, Mod_persistent -> false
+      | Error _ | Ok (_, _, Mod_persistent) -> false
       | _ -> true
     in
     let summary =
@@ -3639,9 +3640,9 @@ let lookup_instance_variable ?(use=true) ~loc name env =
 (* Checking if a name is bound *)
 
 let bound_module name env =
-  match IdTbl.find_name wrap_module ~mark:false name env.modules with
-  | _ -> true
-  | exception Not_found ->
+  match IdTbl.find_name_and_locks wrap_module ~mark:false name env.modules with
+  | Ok _ -> true
+  | Error _ ->
       if Current_unit_name.is name then false
       else begin
         match
