@@ -16,7 +16,6 @@
 (* Environment handling *)
 
 open Types
-open Mode
 open Misc
 
 val register_uid : Uid.t -> loc:Location.t -> attributes:Parsetree.attribute list -> unit
@@ -199,6 +198,12 @@ type shared_context =
   | Probe
   | Lazy
 
+(** Items whose accesses are affected by locks *)
+type lock_item =
+  | Value
+  | Module
+  | Class
+
 type lookup_error =
   | Unbound_value of Longident.t * unbound_value_hint
   | Unbound_type of Longident.t
@@ -220,10 +225,10 @@ type lookup_error =
   | Generative_used_as_applicative of Longident.t
   | Illegal_reference_to_recursive_module
   | Cannot_scrape_alias of Longident.t * Path.t
-  | Local_value_escaping of Longident.t * escaping_context
-  | Once_value_used_in of Longident.t * shared_context
-  | Value_used_in_closure of Longident.t * Mode.Value.Comonadic.error * closure_context option
-  | Local_value_used_in_exclave of Longident.t
+  | Local_value_escaping of lock_item * Longident.t * escaping_context
+  | Once_value_used_in of lock_item * Longident.t * shared_context
+  | Value_used_in_closure of lock_item * Longident.t * Mode.Value.Comonadic.error * closure_context option
+  | Local_value_used_in_exclave of lock_item * Longident.t
   | Non_value_used_in_object of Longident.t * type_expr * Jkind.Violation.t
 
 val lookup_error: Location.t -> t -> lookup_error -> 'a
@@ -240,16 +245,15 @@ val lookup_error: Location.t -> t -> lookup_error -> 'a
    [lookup_foo ~use:true] exactly one time -- otherwise warnings may be
    emitted the wrong number of times. *)
 
-(** The returned shared_context looks strange, but useful for error printing
-    when the returned uniqueness mode is too high because of some linearity_lock
-    during lookup, and fail to satisfy expected_mode in the caller.
+type actual_mode = {
+  mode : Mode.Value.l;
+  context : shared_context option
+  (** Explains why [mode] is high. *)
+}
 
-    TODO: A better approach is passing down the expected mode to this function
-    as argument, so that sub-moding error is triggered at the place where error
-    hints are immediately available. *)
 val lookup_value:
   ?use:bool -> loc:Location.t -> Longident.t -> t ->
-  Path.t * value_description * Mode.Value.l * shared_context option
+  Path.t * value_description * actual_mode
 val lookup_type:
   ?use:bool -> loc:Location.t -> Longident.t -> t ->
   Path.t * type_declaration
@@ -344,10 +348,10 @@ val make_copy_of_types: t -> (t -> t)
 (* Insertion by identifier *)
 
 val add_value_lazy:
-    ?check:(string -> Warnings.t) -> ?mode:((allowed * 'r) Mode.Value.t) ->
+    ?check:(string -> Warnings.t) -> mode:(Mode.allowed * 'r) Mode.Value.t ->
     Ident.t -> Subst.Lazy.value_description -> t -> t
 val add_value:
-    ?check:(string -> Warnings.t) -> ?mode:((allowed * 'r) Mode.Value.t) ->
+    ?check:(string -> Warnings.t) -> mode:(Mode.allowed * 'r) Mode.Value.t ->
     Ident.t -> Types.value_description -> t -> t
 val add_type: check:bool -> Ident.t -> type_declaration -> t -> t
 val add_extension:
@@ -407,7 +411,7 @@ val remove_last_open: Path.t -> t -> t option
 (* Insertion by name *)
 
 val enter_value:
-    ?check:(string -> Warnings.t) ->
+    ?check:(string -> Warnings.t) -> mode:(Mode.allowed * 'r) Mode.Value.t ->
     string -> value_description -> t -> Ident.t * t
 val enter_type: scope:int -> string -> type_declaration -> t -> Ident.t * t
 val enter_extension:
@@ -449,7 +453,7 @@ val add_escape_lock : escaping_context -> t -> t
     relaxed to `shared` *)
 val add_share_lock : shared_context -> t -> t
 val add_closure_lock : ?closure_context:closure_context
-  -> ('l_ * allowed) Mode.Value.Comonadic.t -> t -> t
+  -> ('l * Mode.allowed) Mode.Value.Comonadic.t -> t -> t
 val add_region_lock : t -> t
 val add_exclave_lock : t -> t
 val add_unboxed_lock : t -> t
@@ -605,3 +609,5 @@ type address_head =
   | AHlocal of Ident.t
 
 val address_head : address -> address_head
+
+val sharedness_hint : Format.formatter -> shared_context -> unit

@@ -492,7 +492,7 @@ let enter_ancestor_met ~loc name ~sign ~meths ~cl_num ~ty ~attrs met_env =
       Types.val_loc = loc;
       val_uid = Uid.mk ~current_unit:(Env.get_unit_name ()) }
   in
-  Env.enter_value ~check name desc met_env
+  Env.enter_value ~check ~mode:Mode.Value.legacy name desc met_env
 
 let add_self_met loc id sign self_var_kind vars cl_num
       as_var ty attrs met_env =
@@ -507,7 +507,7 @@ let add_self_met loc id sign self_var_kind vars cl_num
       Types.val_loc = loc;
       val_uid = Uid.mk ~current_unit:(Env.get_unit_name ()) }
   in
-  Env.add_value ~check id desc met_env
+  Env.add_value ~check ~mode:Mode.Value.legacy id desc met_env
 
 let add_instance_var_met loc label id sign cl_num attrs met_env =
   let mut, ty =
@@ -522,7 +522,7 @@ let add_instance_var_met loc label id sign cl_num attrs met_env =
       Types.val_loc = loc;
       val_uid = Uid.mk ~current_unit:(Env.get_unit_name ()) }
   in
-  Env.add_value id desc met_env
+  Env.add_value ~mode:Mode.Value.legacy id desc met_env
 
 let add_instance_vars_met loc vars sign cl_num met_env =
   List.fold_left
@@ -1020,6 +1020,11 @@ and class_structure cl_num virt self_scope final val_env met_env loc
      - cannot refer to local or once variables in the
      environment
      - access to unique variables will be relaxed to shared *)
+  (* CR zqian: We should add [Env.add_sync_lock] which restricts
+  syncness/contention to legacy, but that lock would be a no-op. However, we
+  should be future-proof for potential axes who legacy is set otherwise. The
+  best is to call [Env.add_legacy_lock] (which can be defined by
+  [Env.add_closure_lock]) that covers all axes. *)
   let val_env = Env.add_escape_lock Class (Env.add_unboxed_lock val_env) in
   let val_env = Env.add_share_lock Class val_env in
   let met_env = Env.add_escape_lock Class (Env.add_unboxed_lock met_env) in
@@ -1454,7 +1459,7 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
              let id' = Ident.create_local (Ident.name id) in
              ((id', expr)
               :: vals,
-              Env.add_value id' desc met_env))
+              Env.add_value ~mode:Mode.Value.legacy id' desc met_env))
           (let_bound_idents_with_modes_and_sorts defs)
           ([], met_env)
       in
