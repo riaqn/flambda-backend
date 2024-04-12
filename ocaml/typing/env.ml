@@ -392,7 +392,7 @@ module IdTbl =
         }
 
       | Lock of {
-          mode: 'lock;
+          lock: 'lock;
           next: ('lock, 'a, 'b) t;
         }
 
@@ -425,8 +425,8 @@ module IdTbl =
       | _ ->
           assert false
 
-    let add_lock mode next =
-      { current = Ident.empty; layer = Lock {mode; next} }
+    let add_lock lock next =
+      { current = Ident.empty; layer = Lock {lock; next} }
 
     let map f next =
       {
@@ -440,7 +440,7 @@ module IdTbl =
         begin match tbl.layer with
         | Open {next; _} -> find_same id next
         | Map {f; next} -> f (find_same id next)
-        | Lock {mode=_; next} -> find_same id next
+        | Lock {lock=_; next} -> find_same id next
         | Nothing -> raise exn
         end
 
@@ -469,8 +469,8 @@ module IdTbl =
         | Map {f; next} ->
             (find_name_and_locks wrap ~mark name next macc)
             |> Result.map (fun (p, macc, desc) -> p, macc, f desc)
-        | Lock {mode; next} ->
-            find_name_and_locks wrap ~mark name next (mode :: macc)
+        | Lock {lock; next} ->
+            find_name_and_locks wrap ~mark name next (lock :: macc)
         | Nothing ->
             Error macc
         end
@@ -504,7 +504,7 @@ module IdTbl =
       | Map {f; next} ->
           List.map (fun (p, desc) -> (p, f desc))
             (find_all wrap name next)
-      | Lock {mode=_;next} ->
+      | Lock {lock=_;next} ->
           find_all wrap name next
 
     let rec find_all_idents name tbl () =
@@ -521,7 +521,7 @@ module IdTbl =
             else
               find_all_idents name next ()
         | Map {next; _ } -> find_all_idents name next ()
-        | Lock {mode=_;next} ->
+        | Lock {lock=_;next} ->
             find_all_idents name next ()
       in
       Seq.append current next ()
@@ -546,7 +546,7 @@ module IdTbl =
           |> fold_name wrap
                (fun name (path, desc) -> f name (path, g desc))
                next
-      | Lock {mode=_; next} ->
+      | Lock {lock=_; next} ->
           fold_name wrap f next acc
 
     let rec local_keys tbl acc =
@@ -569,7 +569,7 @@ module IdTbl =
           iter wrap f next
       | Map {f=g; next} ->
           iter wrap (fun id (path, desc) -> f id (path, g desc)) next
-      | Lock {mode=_; next} ->
+      | Lock {lock=_; next} ->
           iter wrap f next
       | Nothing -> ()
 
